@@ -1,4 +1,5 @@
 import pandas  # noqa: F401 (this line needed for Shinylive to load plotly.express)
+import re
 import plotly.express as px
 import plotly.graph_objs as go
 from shinywidgets import output_widget, render_widget
@@ -7,25 +8,32 @@ from shiny import App
 from shiny import experimental as x
 from shiny import reactive, render, req, session, ui
 
-# example taken from: https://shiny.posit.co/py/api/render.data_frame.html
+# example taken & adapted from: https://shiny.posit.co/py/api/render.data_frame.html
 
-# Load the Gapminder dataset
-df = px.data.gapminder()
-# Prepare a summary DataFrame
-summary_df = (
-    df.groupby("country")
+# Load data from CSV file
+new_df = pandas.read_csv('data/Life Expectancy Data.csv')
+
+# Strip columns of trailing whitespace, lower the name of the column and replace all spaces and '-' with an underscore.
+new_df.columns = [re.sub('[ -]{1,}', '_', col.lower().strip()) for col in new_df.columns]
+
+# Create summary dataframe
+new_summary_df = (
+    new_df.groupby('country')
     .agg(
         {
-            "pop": ["min", "max", "mean"],
-            "lifeExp": ["min", "max", "mean"],
-            "gdpPercap": ["min", "max", "mean"],
+            'life_expectancy': ['min', 'max', 'mean'],
+            'adult_mortality': ['min', 'max', 'mean'],
+            'population': ['min', 'max', 'mean'],
+            'gdp': ['min', 'max', 'mean']
         }
-    )
-    .reset_index()
+    ).reset_index()
 )
-summary_df.columns = ["_".join(col).strip() for col in summary_df.columns.values]
 
-summary_df.rename(columns={"country_": "country"}, inplace=True)
+# drop NaN values and join aggregated columns
+new_summary_df = new_summary_df.dropna()
+new_summary_df.columns = ['_'.join(col) for col in new_summary_df.columns.values]
+new_summary_df.rename(columns={"country_": "country"}, inplace=True)
+
 app_ui = x.ui.page_fillable(
     {"class": "p-3"},
     ui.p(
@@ -38,13 +46,19 @@ app_ui = x.ui.page_fillable(
             ui.output_data_frame("summary_data"),
         ),
         x.ui.layout_column_wrap(
-            1 / 2,
+            2 / 4,
             x.ui.card(
                 output_widget("country_detail_pop", height="100%"),
             ),
             x.ui.card(
-                output_widget("country_detail_percap", height="100%"),
+                output_widget("country_detail_gdp", height="100%"),
             ),
+            x.ui.card(
+                output_widget("country_detail_life_expectancy", height="100%"),
+            ),
+            x.ui.card(
+                output_widget("country_detail_adult_mortality", height="100%"),
+            )
         ),
     ),
 )
@@ -55,7 +69,7 @@ def server(input, output, session):
     @render.data_frame
     def summary_data():
         return render.DataGrid(
-            summary_df.round(2),
+            new_summary_df.round(2),
             row_selection_mode="multiple",
             width="100%",
             height="100%",
@@ -64,9 +78,9 @@ def server(input, output, session):
     @reactive.Calc
     def filtered_df():
         selected_idx = list(req(input.summary_data_selected_rows()))
-        countries = summary_df["country"][selected_idx]
+        countries = new_summary_df["country"][selected_idx]
         # Filter data for selected countries
-        return df[df["country"].isin(countries)]
+        return new_df[new_df["country"].isin(countries)]
 
     @output
     @render_widget
@@ -75,7 +89,7 @@ def server(input, output, session):
         fig = px.line(
             filtered_df(),
             x="year",
-            y="pop",
+            y="population",
             color="country",
             title="Population Over Time",
         )
@@ -90,18 +104,58 @@ def server(input, output, session):
 
     @output
     @render_widget
-    def country_detail_percap():
+    def country_detail_gdp():
         # Create the plot
         fig = px.line(
             filtered_df(),
             x="year",
-            y="gdpPercap",
+            y="gdp",
             color="country",
             title="GDP per Capita Over Time",
         )
         widget = go.FigureWidget(fig)
 
         @synchronize_size("country_detail_percap")
+        def on_size_changed(width, height):
+            widget.layout.width = width
+            widget.layout.height = height
+
+        return widget
+
+    @output
+    @render_widget
+    def country_detail_life_expectancy():
+        # Create the plot
+        fig = px.line(
+            filtered_df(),
+            x="year",
+            y="life_expectancy",
+            color="country",
+            title="Life Expectancy Over Time",
+        )
+        widget = go.FigureWidget(fig)
+
+        @synchronize_size("country_detail_life_expectancy")
+        def on_size_changed(width, height):
+            widget.layout.width = width
+            widget.layout.height = height
+
+        return widget
+
+    @output
+    @render_widget
+    def country_detail_adult_mortality():
+        # Create the plot
+        fig = px.line(
+            filtered_df(),
+            x="year",
+            y="adult_mortality",
+            color="country",
+            title="Adult Mortality Over Time",
+        )
+        widget = go.FigureWidget(fig)
+
+        @synchronize_size("country_detail_adult_mortality")
         def on_size_changed(width, height):
             widget.layout.width = width
             widget.layout.height = height
