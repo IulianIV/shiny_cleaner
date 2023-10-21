@@ -8,7 +8,10 @@ from shiny import App
 from shiny import experimental as x
 from shiny import reactive, render, req, session, ui
 
-import asyncio
+# TODO before any filtering is done and 'submit' is pressed, show the original data in the page
+#   after submit is pressed show the filtered out data.
+# TODO Try and see if you can implement tabs as you tried before
+# TODO in the side bar create one section for reporting and one for editing.
 
 # example taken & adapted from: https://shiny.posit.co/py/api/render.data_frame.html
 
