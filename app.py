@@ -1,93 +1,50 @@
-import pandas  # noqa: F401 (this line needed for Shinylive to load plotly.express)
+import os.path
 import re
+
+import pandas  # noqa: F401 (this line needed for Shinylive to load plotly.express)
 import plotly.express as px
 import plotly.graph_objs as go
-from shinywidgets import output_widget, render_widget
-
 from shiny import App
 from shiny import experimental as x
 from shiny import reactive, render, req, session, ui
+from shinywidgets import output_widget, render_widget
 
-# TODO before any filtering is done and 'submit' is pressed, show the original data in the page
-#   after submit is pressed show the filtered out data.
-# TODO Try and see if you can implement tabs as you tried before
-# TODO in the side bar create one section for reporting and one for editing.
+from utils import create_summary_df, get_data_files
 
-# example taken & adapted from: https://shiny.posit.co/py/api/render.data_frame.html
-
-# Load data from CSV file
-new_df = pandas.read_csv('data/Life Expectancy Data.csv')
-new_df = new_df.dropna()
-
-# Strip columns of trailing whitespace, lower the name of the column and replace all spaces and '-' with an underscore.
-new_df.columns = [re.sub('[ -]{1,}', '_', col.lower().strip()) for col in new_df.columns]
-
-
-def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: tuple[str],
-                      functions: list[str], fallback_functions: list[str] = None):
-    """
-    Create a summary DataFrame by grouping based on `group_by`, aggregating by columns from `aggregator` and
-    applying a function on all found columns with `actions`
-    By default functions is: ['min', 'max', 'mean']
-    :param fallback_functions: if any columns from aggregators are not numeric, do the fallback function 'count' instead
-    :param data_frame: DataFrame to summarize
-    :param group_by: Column to group by
-    :param aggregators: Columns to aggregate by
-    :param functions: possible functions to apply e.g. [np.sum, 'mean']
-    :return:
-    """
-    if functions is None:
-        functions = ['min', 'max', 'mean']
-
-    if fallback_functions is None:
-        fallback_functions = ['count']
-
-    df = data_frame
-
-    aggs = {k: list(functions) if pandas.api.types.is_numeric_dtype(df[k]) else fallback_functions for k in aggregators}
-    summarized_df = (df.groupby(group_by).agg(
-        aggs
-    ).reset_index()
-                     )
-    summarized_df.columns = [re.sub('^_|_$', '', '_'.join(col)) for col in summarized_df.columns.values]
-
-    return summarized_df
-
-
-# drop NaN values and join aggregated columns
-
-grouper = [col for col in new_df.columns.values]
 operations = ['min', 'max', 'mean']
 fallback = ['count']
 
 # column choices
 app_ui = x.ui.page_fillable(
-    x.ui.layout_sidebar(
-        x.ui.panel_sidebar(
+    ui.layout_sidebar(
+        ui.panel_sidebar(
             {"class": "p-3"},
-            ui.p(
-                ui.strong("Instructions:"),
-                " Select an grouper col and one or more columns to summarize the data by.",
-            ),
-            ui.input_selectize("group_by", f"Select Columns to Group By", grouper),
-            ui.input_selectize("aggregator", f"Select Columns to Aggregate", [], multiple=True),
-            ui.input_selectize("operations", f"Select Operations", operations, multiple=True),
-            ui.input_selectize("fallbacks", f"Fallback Operations", fallback, multiple=True),
-            ui.input_action_button("submit", "See Summary"),
-            ui.panel_conditional(
-                "input.submit",
-                ui.input_selectize("x_ax", f"X-axis", []),
-                ui.input_selectize("y_ax", f"Y-axis", []),
-                ui.input_action_button("plot", "Plot Graph"),
+            ui.input_selectize("file_name", f"Select File", []),
+            ui.input_action_button("load_file", "Load File"),
+            ui.panel_conditional('input.load_file',
+                                 ui.p(
+                                     ui.strong("Instructions:"),
+                                     " Select columns to group and aggregate by.",
+                                 ),
+                                 ui.input_selectize("group_by", f"Group By", []),
+                                 ui.input_selectize("aggregator", f"Aggregate", [], multiple=True),
+                                 ui.input_selectize("operations", f"Operations", operations, multiple=True),
+                                 ui.input_selectize("fallbacks", f"Fallback Operations", fallback, multiple=True),
+                                 ui.input_action_button("submit", "Summarize"),
+                                 ui.panel_conditional(
+                                     "input.submit",
+                                     ui.input_selectize("x_ax", f"X-axis", []),
+                                     ui.input_selectize("y_ax", f"Y-axis", []),
+                                     ui.input_action_button("plot", "Plot Graph"),
 
-            )
-
+                                 )
+                                 )
         ),
         x.ui.panel_main(
             x.ui.layout_column_wrap(
                 1,
                 x.ui.card(
-                    ui.output_data_frame("summary_data"),
+                    ui.output_data_frame("summary_data")
                 ),
                 x.ui.layout_column_wrap(
                     1,
@@ -102,46 +59,82 @@ app_ui = x.ui.page_fillable(
 
 
 def server(input, output, session):
-    data_frame = reactive.Value(None)
+    original_df = reactive.Value()
+    grouper = reactive.Value()
+    data_frame = reactive.Value()
 
-    @reactive.Effect()
+    @reactive.Effect
+    def update_file_names():
+        files = [name[0] for name in get_data_files()]
+
+        ui.update_selectize(
+            'file_name',
+            choices=files,
+            selected=None
+        )
+
+    # also updates the 'group_by' input
+    @reactive.Effect
+    @reactive.event(input.load_file)
+    def load_data_frame():
+        name = os.path.join('data', input.file_name() + '.csv')
+        df = pandas.read_csv(name)
+        df = df.dropna()
+        df.columns = [re.sub('[ -]{1,}', '_', col.lower().strip()) for col in df.columns]
+
+        col_names = [col for col in df.columns.values]
+
+        grouper.set(col_names)
+        original_df.set(df)
+
+        ui.update_selectize(
+            'group_by',
+            choices=grouper(),
+            selected=grouper()[0]
+        )
+
+    # Remove from the columns input the currently selected group_by value
+
+    @reactive.Effect
+    @reactive.event(input.group_by)
     def update_aggregator_input():
-        cols = grouper[:]
+        cols = grouper()[:]
+
         cols.remove(input.group_by())
 
-        return ui.update_selectize(
+        ui.update_selectize(
             "aggregator",
-            label=f"Select columns ({len(cols)} options)",
+            label=f"Aggregate by",
             choices=cols,
             selected=None
         )
 
-    @reactive.Effect()
+    # Update x_axis and y_axis inputs according to the group_by and aggregator inputs
+    @reactive.Effect
     def update_graph_input():
-        x_axis = grouper
+        x_axis = grouper()
         y_axis = input.aggregator()
 
         ui.update_selectize('x_ax', choices=x_axis, selected=None)
         ui.update_selectize('y_ax', choices=y_axis, selected=None)
 
-    @reactive.Effect
+    @output
+    @render.data_frame
     @reactive.event(input.submit)
-    def summary_df():
+    def summary_data():
+
         values = [input.group_by(), input.aggregator(), input.operations(), input.fallbacks()]
 
+        # Make sure that strings get converted to list to work with pandas.aggregate
         for value in values:
             if isinstance(value, str):
                 new_value = ''.join([x for x in value])
                 values[values.index(value)] = new_value
 
-        selected_df = create_summary_df(new_df, values[0], values[1], values[2], values[3])
+        selected_df = create_summary_df(original_df(), values[0], values[1], values[2], values[3])
 
         data_frame.set(selected_df)
 
-    @output
-    @render.data_frame
-    @reactive.event(input.submit)
-    def summary_data():
         return render.DataGrid(
             data_frame().round(2),
             row_selection_mode="multiple",
@@ -152,9 +145,10 @@ def server(input, output, session):
     @reactive.Calc
     def filtered_df():
         selected_idx = list(req(input.summary_data_selected_rows()))
-        countries = data_frame()[input.group_by()][selected_idx]
+        selection = data_frame()[input.group_by()][selected_idx]
+
         # Filter data for selected countries
-        return new_df[new_df[input.group_by()].isin(countries)]
+        return original_df()[original_df()[input.group_by()].isin(selection)]
 
     @output
     @render_widget
@@ -184,8 +178,7 @@ def server(input, output, session):
 def synchronize_size(output_id):
     def wrapper(func):
         input = session.get_current_session().input
-        print(input[f".clientdata_output_{output_id}_width"]())
-        print(input[f".clientdata_output_{output_id}_height"]())
+
         @reactive.Effect
         def size_updater():
             func(
