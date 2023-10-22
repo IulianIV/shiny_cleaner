@@ -1,3 +1,5 @@
+from shiny import reactive, session
+
 import pandas
 import re
 import os
@@ -51,3 +53,26 @@ def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: 
     summarized_df.columns = [re.sub('^_|_$', '', '_'.join(col)) for col in summarized_df.columns.values]
 
     return summarized_df
+
+
+# This is a hacky workaround to help Plotly plots automatically
+# resize to fit their container. In the future we'll have a
+# built-in solution for this.
+def synchronize_size(output_id):
+    def wrapper(func):
+        input = session.get_current_session().input
+
+        @reactive.Effect
+        def size_updater():
+            func(
+                input[f".clientdata_output_{output_id}_width"](),
+                input[f".clientdata_output_{output_id}_height"](),
+            )
+
+        # When the output that we're synchronizing to is invalidated,
+        # clean up the size_updater Effect.
+        reactive.get_current_context().on_invalidate(size_updater.destroy)
+
+        return size_updater
+
+    return wrapper
