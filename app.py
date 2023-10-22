@@ -7,7 +7,8 @@ from modules.summary.server import (get_files, load_data_frame, update_aggregato
                                     update_graph_input, load_summary_data, show_graph, filter_df)
 
 from modules.distributions.ui import distribution_selection
-from modules.distributions.server import create_distribution_inputs
+from modules.distributions.server import (create_distribution_inputs,
+                                          update_distribution_inputs, create_distribution_data_set)
 
 # column choices
 app_ui = x.ui.page_fillable(
@@ -37,6 +38,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     original_df = reactive.Value()
     grouper = reactive.Value()
     data_frame = reactive.Value()
+    distribution_df = reactive.Value()
 
     get_files('summary_inputs')
 
@@ -54,5 +56,10 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def distribution_inputs():
         create_distribution_inputs('distributions')
+
+    update_distribution_inputs('distributions')
+
+    create_distribution_data_set('distributions', distribution_df)
+
 
 app = App(app_ui, server)
