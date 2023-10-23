@@ -1,6 +1,6 @@
 from shiny import module, ui
 from shiny import experimental as x
-from shinywidgets import output_widget, render_widget
+from shinywidgets import output_widget
 
 
 @module.ui
