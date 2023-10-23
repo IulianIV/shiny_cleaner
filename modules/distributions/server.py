@@ -1,7 +1,16 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
-from config import MAX, MIN, STANDARD_DEVIATION, MEAN_SIGMA
+from shinywidgets import render_widget
+
+import plotly.express as px
+import plotly.figure_factory as ff
+import plotly.graph_objs as go
+
+from config import Config
+from utils import synchronize_size
 
 
 @module.server
@@ -10,10 +19,10 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
     @render.ui
     @reactive.event(input.distributions)
     def inputs():
-        min_val = MIN
-        max_val = MAX
-        sd = STANDARD_DEVIATION
-        mean = MEAN_SIGMA
+        min_val = Config.input_config('distributions_min')
+        max_val = Config.input_config('distributions_max')
+        sd = Config.input_config('distributions_standard_deviation')
+        mean = Config.input_config('distributions_mean_sigma')
 
         if input.distributions() == 'Gaussian':
             return (
@@ -23,7 +32,7 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                     ui.column(3, ui.input_numeric("mean", "μ", value=mean)),
                     ui.column(3, ui.input_numeric("sd", "σ", value=sd))
                 ), ui.input_switch("matrix", "Min x Max matrix"),
-                ui.input_slider("observations", None, min=min_val, max=max_val, value=max_val / 2),
+                ui.input_slider("observations", 'Observations', min=min_val, max=max_val, value=max_val / 2),
                 ui.input_action_button("plot_distribution", "Plot")
             )
 
@@ -71,10 +80,38 @@ def load_distribution_data(input: Inputs, output: Outputs, session: Session, dat
     @output
     @render.data_frame
     def data():
-
         return render.DataGrid(
             data_frame().round(3),
             row_selection_mode="multiple",
             width="100%",
             height="100%",
         )
+
+
+@module.server
+def distribution_graph(input: Inputs, output: Outputs, session: Session, data_frame):
+    @output
+    @render_widget
+    @reactive.event(input.plot_distribution)
+    def graph():
+        if input.distributions() == 'Gaussian':
+            # Create the plot
+            fig = px.histogram(
+                data_frame(),
+                x='value',
+                title=f'Histogram of {input.distributions()} distribution')
+            # fig = px.line(
+            #     data_frame(),
+            #     x=input.x_ax(),
+            #     y=input.y_ax(),
+            #     color=input.group_by(),
+            #     title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}",
+            # )
+            widget = go.FigureWidget(fig)
+
+            @synchronize_size("graph")
+            def on_size_changed(width, height):
+                widget.layout.width = width
+                widget.layout.height = height
+
+            return widget

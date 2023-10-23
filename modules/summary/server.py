@@ -12,7 +12,7 @@ from utils import get_data_files, create_summary_df, synchronize_size
 
 
 @module.server
-def update_filename_input(*args):
+def update_filename_input(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     def update():
         files = [name[0] for name in get_data_files()]
@@ -131,11 +131,10 @@ def create_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
             title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}",
         )
         widget = go.FigureWidget(fig)
+
         @synchronize_size("graph")
         def on_size_changed(width, height):
             widget.layout.width = width
             widget.layout.height = height
 
         return widget
-
-
