@@ -9,7 +9,7 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
     @output
     @render.ui
     @reactive.event(input.distributions)
-    def distribution_inputs():
+    def inputs():
         min_val = MIN
         max_val = MAX
         sd = STANDARD_DEVIATION
@@ -20,8 +20,8 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                 ui.row(
                     ui.column(3, ui.input_numeric("min", "Min", value=min_val)),
                     ui.column(3, ui.input_numeric("max", "Max", value=max_val)),
-                    ui.column(3, ui.input_numeric("mean", "Mean", value=mean)),
-                    ui.column(3, ui.input_numeric("sd", "SD", value=sd))
+                    ui.column(3, ui.input_numeric("mean", "μ", value=mean)),
+                    ui.column(3, ui.input_numeric("sd", "σ", value=sd))
                 ), ui.input_switch("matrix", "Min x Max matrix"),
                 ui.input_slider("observations", None, min=min_val, max=max_val, value=max_val / 2),
                 ui.input_action_button("plot_distribution", "Plot")
@@ -30,10 +30,9 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
 @module.server
 def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
-    # Update x_axis and y_axis inputs according to the group_by and aggregator inputs
     @reactive.Effect
     @reactive.event(input.min, input.max)
-    def update_slider():
+    def update():
         current_value = input.observations()
         min_val = input.min()
         max_val = input.max()
@@ -48,10 +47,8 @@ def update_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
 @module.server
 def create_distribution_data_set(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
-    @output
-    @render.data_frame
     @reactive.Effect
-    def summary_data():
+    def data_set():
         obs = input.observations()
         sd = input.sd()
         mean = input.mean()
@@ -59,7 +56,7 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
         if input.distributions() == 'Gaussian':
             distribution = np.random.normal(mean, sd, obs)
             distribution_df = pd.DataFrame(data=distribution, index=range(1, len(distribution) + 1),
-                                           columns=['valuee'])
+                                           columns=['value'])
 
             if input.matrix():
                 distribution = np.random.normal(mean, sd, size=(input.min(), input.max()))
@@ -67,9 +64,17 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                columns=[f'value_{x}' for x in range(1, distribution.shape[1] + 1)])
 
             data_frame.set(distribution_df)
-            return render.DataGrid(
-                data_frame().round(3),
-                row_selection_mode="multiple",
-                width="100%",
-                height="100%",
-            )
+
+
+@module.server
+def load_distribution_data(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
+    @output
+    @render.data_frame
+    def data():
+
+        return render.DataGrid(
+            data_frame().round(3),
+            row_selection_mode="multiple",
+            width="100%",
+            height="100%",
+        )

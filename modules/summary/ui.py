@@ -1,6 +1,4 @@
 from shiny import module, ui
-from shiny import experimental as x
-from shinywidgets import output_widget
 from config import OPERATIONS, FALLBACK
 
 
@@ -32,17 +30,3 @@ def summary_inputs():
                                  )
                                  )
             )
-
-
-@module.ui
-def summary_table():
-    return x.ui.card(
-        ui.output_data_frame("summary_data")
-    )
-
-
-@module.ui
-def summary_graph():
-    return x.ui.card(
-        output_widget("show_summary_graph", height="100%"),
-    )

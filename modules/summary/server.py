@@ -12,9 +12,9 @@ from utils import get_data_files, create_summary_df, synchronize_size
 
 
 @module.server
-def get_files(input: Inputs, output: Outputs, session: Session):
+def update_filename_input(*args):
     @reactive.Effect
-    def update_file_names():
+    def update():
         files = [name[0] for name in get_data_files()]
 
         ui.update_selectize(
@@ -29,7 +29,7 @@ def load_data_frame(input: Inputs, output: Outputs, session: Session, grouper, o
     # also updates the 'group_by' input
     @reactive.Effect
     @reactive.event(input.load_file)
-    def load_frame():
+    def load():
         name = os.path.join('data', input.file_name() + '.csv')
         df = pandas.read_csv(name)
         df = df.dropna()
@@ -51,7 +51,7 @@ def load_data_frame(input: Inputs, output: Outputs, session: Session, grouper, o
 def update_aggregator_input(input: Inputs, output: Outputs, session: Session, grouper):
     @reactive.Effect
     @reactive.event(input.group_by)
-    def update_aggregator_input():
+    def update():
         cols = grouper()[:]
 
         # Remove from the columns input the currently selected group_by value
@@ -68,7 +68,7 @@ def update_aggregator_input(input: Inputs, output: Outputs, session: Session, gr
 def update_graph_input(input: Inputs, output: Outputs, session: Session, grouper):
     # Update x_axis and y_axis inputs according to the group_by and aggregator inputs
     @reactive.Effect
-    def update_graph_input():
+    def update():
         x_axis = grouper()
         y_axis = input.aggregator()
 
@@ -81,7 +81,7 @@ def load_summary_data(input: Inputs, output: Outputs, session: Session, original
     @output
     @render.data_frame
     @reactive.event(input.submit)
-    def summary_data():
+    def data():
 
         values = [input.group_by(), input.aggregator(), input.operations(), input.fallbacks()]
 
@@ -106,22 +106,22 @@ def load_summary_data(input: Inputs, output: Outputs, session: Session, original
 @module.server
 def filter_df(input: Inputs, output: Outputs, session: Session, original_df, data_frame):
     @reactive.Calc
-    def filtered_df():
-        selected_idx = list(req(input.summary_data_selected_rows()))
+    def filtered():
+        selected_idx = list(req(input.data_selected_rows()))
         selection = data_frame()[input.group_by()][selected_idx]
 
         # Filter data for selected countries
         return original_df()[original_df()[input.group_by()].isin(selection)]
 
-    return filtered_df
+    return filtered
 
 
 @module.server
-def show_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
+def create_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
     @output
     @render_widget
     @reactive.event(input.plot)
-    def show_summary_graph():
+    def graph():
         # Create the plot
         fig = px.line(
             filtered_df(),
@@ -131,8 +131,7 @@ def show_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
             title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}",
         )
         widget = go.FigureWidget(fig)
-
-        @synchronize_size("show_summary_graph")
+        @synchronize_size("graph")
         def on_size_changed(width, height):
             widget.layout.width = width
             widget.layout.height = height
