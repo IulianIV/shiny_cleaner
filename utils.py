@@ -55,6 +55,22 @@ def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: 
     return summarized_df
 
 
+def two_dim_to_one_dim(data_frame: pandas.DataFrame, column_name: str) -> pandas.DataFrame:
+    """
+    Converts a 2D matrix of n-columns to a single 1 column 1D vector.
+    :param data_frame: DataFrame to be reduced
+    :param column_name: Column name to pass to the final DataFrame
+    :return: reduced DataFrame
+    """
+    # main functions that convert from n-columns to 1-column
+    one_dim_df = data_frame.stack().reset_index()
+    # drop all columns except last column - which holds the data
+    one_dim_df.drop(one_dim_df.columns[:-1], axis=1, inplace=True)
+    # rename last column
+    one_dim_df.columns = [column_name]
+
+    return one_dim_df
+
 # This is a hacky workaround to help Plotly plots automatically
 # resize to fit their container. In the future we'll have a
 # built-in solution for this.
