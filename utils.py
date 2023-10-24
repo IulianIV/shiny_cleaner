@@ -1,8 +1,14 @@
 from shiny import reactive, session
+import shiny.reactive
 
-import pandas
+import pandas as pd
+import numpy as np
 import re
 import os
+
+from config import Config
+
+distribution_types = Config.server_config('distribution_types')
 
 
 def get_data_files(data_path: str = None) -> list[tuple[str, str]]:
@@ -22,8 +28,8 @@ def get_data_files(data_path: str = None) -> list[tuple[str, str]]:
     return file_names
 
 
-def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: tuple[str] | list,
-                      functions: list[str] | str, fallback_functions: list[str] | str = None) -> pandas.DataFrame:
+def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tuple[str] | list,
+                      functions: list[str] | str, fallback_functions: list[str] | str = None) -> pd.DataFrame:
     """
     Create a summary DataFrame by grouping based on `group_by`, aggregating by columns from `aggregator` and
     applying a function on all found columns with `actions`
@@ -44,7 +50,7 @@ def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: 
 
     df = data_frame
 
-    aggs = {k: list(functions) if pandas.api.types.is_numeric_dtype(df[k]) else fallback_functions for k in aggregators}
+    aggs = {k: list(functions) if pd.api.types.is_numeric_dtype(df[k]) else fallback_functions for k in aggregators}
 
     summarized_df = (df.groupby(group_by).agg(
         aggs
@@ -55,7 +61,37 @@ def create_summary_df(data_frame: pandas.DataFrame, group_by: str, aggregators: 
     return summarized_df
 
 
-def two_dim_to_one_dim(data_frame: pandas.DataFrame, column_name: str) -> pandas.DataFrame:
+def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.reactive.Value],
+                           cond_input: shiny.reactive.Value, column: str = 'value'):
+    """
+    Create a distribution function given a distribution type and reactive inputs
+    :param dist_type: Must be a distribution type found within `numpy.random`
+    :param dist_args: Arguments to be given. Consult `numpy.random.distribution` for more info
+    :param cond_input: Conditional input to convert the 2D DataFrame to 1D
+    :param column: name to give to columns
+    :return: a DataFrame created from a numpy random distribution array
+    """
+
+    if dist_type not in distribution_types:
+        print(dist_type)
+        print(distribution_types)
+        raise ValueError(f'Selected distribution "{dist_type}" is not a valid distribution in numpy.random .')
+
+    # basically calls `numpy.random.dist_type` and unpacks the contents of `dist_args` as arguments
+    np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max']])
+    dist_df = pd.DataFrame(data=np_dist, index=range(1, len(np_dist) + 1),
+                           columns=[column])
+
+    if cond_input():
+        np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max', 'obs']],
+                                                (dist_args['min'](), dist_args['max']()))
+        dist_df = pd.DataFrame(data=np_dist[:, :], index=range(1, len(np_dist) + 1),
+                               columns=[f'{column}_{x}' for x in range(1, np_dist.shape[1] + 1)])
+
+    return dist_df
+
+
+def two_dim_to_one_dim(data_frame: pd.DataFrame, column_name: str) -> pd.DataFrame:
     """
     Converts a 2D matrix of n-columns to a single 1 column 1D vector.
     :param data_frame: DataFrame to be reduced
