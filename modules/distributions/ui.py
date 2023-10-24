@@ -3,6 +3,7 @@ from shiny import module, ui
 
 distributions = Config.input_config('distributions')
 
+
 @module.ui
 def distribution_selection():
     return (
@@ -10,4 +11,3 @@ def distribution_selection():
         ui.p('Distribution settings'),
         ui.output_ui('inputs')
     )
-

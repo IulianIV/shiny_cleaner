@@ -1,8 +1,4 @@
 from __future__ import annotations
-import numpy as np
-import pandas
-import pandas as pd
-import shiny.reactive
 
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
@@ -31,6 +27,7 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         mean = Config.input_config('distributions_mean_mu')
         events = Config.input_config('distributions_events')
         scale = Config.input_config('distributions_scale')
+        prob = Config.input_config('distributions_probability')
 
         if input.distributions() == 'Gaussian':
             return (
@@ -53,12 +50,11 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         if input.distributions() == 'Poisson':
             return (
                 ui.row(
-                    ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
-                    ui.column(3, ui.input_numeric('events', 'Events', value=events)),
+                    ui.column(4, ui.input_numeric('min', 'Min', value=min_val)),
+                    ui.column(4, ui.input_numeric('max', 'Max', value=max_val)),
+                    ui.column(4, ui.input_numeric('events', 'Events', value=events)),
                 ), x.ui.tooltip(
                     ui.input_switch('matrix', 'Matrix'),
-                    # TODO find a way to show this as `(input.min(), input.max())` with actual values
                     "(Min, Max) matrix of values",
                     id="matrix_tip", placement='left'
                 ),
@@ -70,12 +66,27 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         if input.distributions() == 'Exponential':
             return (
                 ui.row(
-                    ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
-                    ui.column(3, ui.input_numeric('scale', 'Scale', value=scale)),
+                    ui.column(4, ui.input_numeric('min', 'Min', value=min_val)),
+                    ui.column(4, ui.input_numeric('max', 'Max', value=max_val)),
+                    ui.column(4, ui.input_numeric('scale', 'Scale', value=scale)),
                 ), x.ui.tooltip(
                     ui.input_switch('matrix', 'Matrix'),
-                    # TODO find a way to show this as `(input.min(), input.max())` with actual values
+                    "(Min, Max) matrix of values",
+                    id="matrix_tip", placement='left'
+                ),
+                ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                                value=max_val / 2),
+                ui.input_action_button('plot_distribution', 'Plot')
+            )
+
+        if input.distributions() == 'Geometric':
+            return (
+                ui.row(
+                    ui.column(4, ui.input_numeric('min', 'Min', value=min_val)),
+                    ui.column(4, ui.input_numeric('max', 'Max', value=max_val)),
+                    ui.column(4, ui.input_numeric('prob', 'Probability', value=prob)),
+                ), x.ui.tooltip(
+                    ui.input_switch('matrix', 'Matrix'),
                     "(Min, Max) matrix of values",
                     id="matrix_tip", placement='left'
                 ),
@@ -102,16 +113,20 @@ def test_text(input: Inputs, output: Outputs, session: Session):
 @module.server
 def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
-    @reactive.event(input.min, input.max)
+    @reactive.event(input.min, input.max, input.prob)
     def update():
         current_value = input.observations()
         min_val = input.min()
         max_val = input.max()
+        prob_val = input.prob()
 
         if min_val > max_val:
             ui.update_numeric('min', value=max_val)
             ui.update_numeric('max', value=min_val)
             ui.update_slider('observations', min=max_val, max=min_val, value=current_value)
+
+        if prob_val > 1 or 0 > prob_val:
+            ui.update_numeric('prob', value=1)
 
         ui.update_slider('observations', min=min_val, max=max_val, value=current_value)
 
@@ -151,6 +166,17 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      input.matrix)
 
             data_frame.set(distribution_df)
+
+        if input.distributions() == 'Geometric':
+            prob = input.prob()
+
+            distribution_df = create_distribution_df('geometric',
+                                                     {'prob': prob, 'obs': obs, 'min': input.min,
+                                                      'max': input.max},
+                                                     input.matrix)
+
+            data_frame.set(distribution_df)
+
 
 
 @module.server

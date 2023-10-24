@@ -11,6 +11,8 @@ from config import Config
 distribution_types = Config.server_config('distribution_types')
 
 
+# TODO try to implement the distributions as generators
+
 def get_data_files(data_path: str = None) -> list[tuple[str, str]]:
     """
     Return all file names given a path to a folder with data files
@@ -83,8 +85,9 @@ def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.rea
                            columns=[column])
 
     if cond_input():
-        np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max', 'obs']],
-                                                (dist_args['min'](), dist_args['max']()))
+        np_dist = getattr(np.random, dist_type)(
+            *[val for key, val in dist_args.items() if key not in ['min', 'max', 'obs']],
+            (dist_args['min'](), dist_args['max']()))
         dist_df = pd.DataFrame(data=np_dist[:, :], index=range(1, len(np_dist) + 1),
                                columns=[f'{column}_{x}' for x in range(1, np_dist.shape[1] + 1)])
 
@@ -106,6 +109,7 @@ def two_dim_to_one_dim(data_frame: pd.DataFrame, column_name: str) -> pd.DataFra
     one_dim_df.columns = [column_name]
 
     return one_dim_df
+
 
 # This is a hacky workaround to help Plotly plots automatically
 # resize to fit their container. In the future we'll have a

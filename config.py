@@ -27,7 +27,8 @@ class Config:
         'distributions_min': 10,
         'distributions_max': 100,
         'distributions_events': 5,
-        'distributions_scale': 5
+        'distributions_scale': 5,
+        'distributions_probability': 0.35
     }
 
     @staticmethod
