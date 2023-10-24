@@ -39,7 +39,18 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                 ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                                 value=max_val / 2),
                 ui.input_action_button('plot_distribution', 'Plot')
+
             )
+
+# TODO add a way to show data about the distribution: set mean and sd, calculated mean and sd etc
+# ui.output_text_verbatim("test", placeholder=False)
+# @module.server
+# def test_text(input: Inputs, output: Outputs, session: Session):
+#     @output
+#     @render.text
+#     def test():
+#         return input.distributions()
+#     return test
 
 
 @module.server
