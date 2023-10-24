@@ -1,15 +1,12 @@
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 
 import plotly.express as px
-import plotly.figure_factory as ff
 import plotly.graph_objs as go
 
-from config import Config
 from utils import synchronize_size
 
 from config import Config
@@ -98,9 +95,17 @@ def distribution_graph(input: Inputs, output: Outputs, session: Session, data_fr
     @reactive.event(input.plot_distribution)
     def graph():
         if input.distributions() == 'Gaussian':
+            plot_data = data_frame()
+
+            if input.matrix():
+                one_dim_df = plot_data.stack().reset_index()
+                one_dim_df.drop(['level_0', 'level_1'], axis=1, inplace=True)
+                one_dim_df.columns = ['value']
+                plot_data = one_dim_df
+
             # Create the plot
             fig = px.histogram(
-                data_frame(),
+                plot_data,
                 x='value',
                 title=f'Histogram of {input.distributions()} distribution', height=graph_height)
             # fig = px.line(
