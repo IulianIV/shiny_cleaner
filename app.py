@@ -11,8 +11,13 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
                                     update_graph_input, load_summary_data, create_graph, filter_df)
 
 from modules.distributions.ui import distribution_selection
-from modules.distributions.server import (create_distribution_inputs, load_distribution_data, test_text,
+from modules.distributions.server import (create_distribution_inputs, load_distribution_data,
                                           update_distribution_inputs, create_distribution_data_set, distribution_graph)
+
+
+# TODO Check import management
+#   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
+#   function. This way the global namespace is less cluttered.
 
 app_width = Config.ui_config('width')
 app_height = Config.ui_config('height')
@@ -91,4 +96,4 @@ def server(input: Inputs, output: Outputs, session: Session):
     distribution_graph('distributions', distribution_df)
 
 
-app = App(app_ui, server)
+app = App(app_ui, server, debug=False)
