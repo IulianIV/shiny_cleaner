@@ -21,7 +21,8 @@ class Config:
         'distributions_mean_mu': 1,
         'distributions_standard_deviation_sigma': 1.1,
         'distributions_min': 10,
-        'distributions_max': 100
+        'distributions_max': 100,
+        'distributions_events': 5
     }
 
     @staticmethod
