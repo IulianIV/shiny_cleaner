@@ -1,3 +1,5 @@
+from numpy import random
+
 class Config:
     __configs = ['ui', 'input']
 
@@ -11,7 +13,9 @@ class Config:
         'height': 1200,
         'graph_height': 550
     }
-    __server_config = {}
+    __server_config = {
+        'distribution_types': random.__all__
+    }
     __input_config = {
         'summary_operations': ['min', 'max', 'mean'],
         'summary_fallback': ['count'],
@@ -22,16 +26,17 @@ class Config:
         'distributions_standard_deviation_sigma': 1.1,
         'distributions_min': 10,
         'distributions_max': 100,
-        'distributions_events': 5
+        'distributions_events': 5,
+        'distributions_scale': 5
     }
 
     @staticmethod
     def ui_config(name):
         return Config.__ui_config[name]
 
-    # @staticmethod
-    # def server_config(name):
-    #     return Config.__server_config[name]
+    @staticmethod
+    def server_config(name):
+        return Config.__server_config[name]
 
     @staticmethod
     def input_config(name):
