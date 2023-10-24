@@ -18,8 +18,8 @@ class Config:
         'distributions': ['Discrete Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Gaussian', 'Exponential',
                           'Negative Binomial',
                           'Geometric'],
-        'distributions_mean_sigma': 5,
-        'distributions_standard_deviation': 10,
+        'distributions_mean_mu': 1,
+        'distributions_standard_deviation_sigma': 1.1,
         'distributions_min': 10,
         'distributions_max': 100
     }

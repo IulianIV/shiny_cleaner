@@ -1,11 +1,14 @@
+import numpy
 import numpy as np
 import pandas as pd
+from scipy.stats import gaussian_kde
 
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 
 import plotly.express as px
 import plotly.graph_objs as go
+import plotly.figure_factory as ff
 
 from utils import synchronize_size
 
@@ -22,8 +25,8 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
     def inputs():
         min_val = Config.input_config('distributions_min')
         max_val = Config.input_config('distributions_max')
-        sd = Config.input_config('distributions_standard_deviation')
-        mean = Config.input_config('distributions_mean_sigma')
+        sd = Config.input_config('distributions_standard_deviation_sigma')
+        mean = Config.input_config('distributions_mean_mu')
 
         if input.distributions() == 'Gaussian':
             return (
@@ -33,9 +36,8 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                     ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
                     ui.column(3, ui.input_numeric('sd', 'σ', value=sd))
                 ), ui.input_switch('matrix', 'Min x Max matrix'),
-                ui.panel_conditional('not input.matrix',
-                                     ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
-                                                     value=max_val / 2)),
+                ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                                value=max_val / 2),
                 ui.input_action_button('plot_distribution', 'Plot')
             )
 
@@ -97,6 +99,8 @@ def distribution_graph(input: Inputs, output: Outputs, session: Session, data_fr
     @render_widget
     @reactive.event(input.plot_distribution)
     def graph():
+        # widget = go.FigureWidget()
+
         if input.distributions() == 'Gaussian':
             plot_data = data_frame()
 
@@ -107,18 +111,23 @@ def distribution_graph(input: Inputs, output: Outputs, session: Session, data_fr
                 plot_data = one_dim_df
 
             # Create the plot
-            fig = px.histogram(
+            hist = px.histogram(
                 plot_data,
                 x='value',
                 title=f'Histogram of {input.distributions()} distribution', height=graph_height)
-            # fig = px.line(
-            #     data_frame(),
-            #     x=input.x_ax(),
-            #     y=input.y_ax(),
-            #     color=input.group_by(),
-            #     title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}",
-            # )
-            widget = go.FigureWidget(fig)
+
+            # TODO Add Kernel Density Estimation KDE or some sort of Probability Density Function
+            #   like the one from: https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html
+            # array_plot_data = plot_data[plot_data.columns[0]].to_numpy()
+            # kde = gaussian_kde(array_plot_data)
+            #
+            # estimate1 = numpy.array([1 / (array_plot_data.std() * np.sqrt(2 * np.pi)) * np.exp(- (x -
+            # array_plot_data.mean()) ** 2 / (2 * array_plot_data.std() ** 2)) for x in array_plot_data]) print(
+            # plot_data) print(kde(array_plot_data)) kde_trace = go.Scatter(x=plot_data, y=kde(array_plot_data),
+            # mode='lines', name='markers')
+            # hist.add_trace(kde_trace)
+
+            widget = go.FigureWidget(hist)
 
             @synchronize_size("graph")
             def on_size_changed(width, height):
