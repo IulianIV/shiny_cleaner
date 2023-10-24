@@ -8,7 +8,8 @@ class Config:
 
     __ui_config = {
         'width': 500,
-        'height': 1200
+        'height': 1200,
+        'graph_height': 550
     }
     __server_config = {}
     __input_config = {

@@ -9,7 +9,9 @@ import os
 import re
 
 from utils import get_data_files, create_summary_df, synchronize_size
+from config import Config
 
+graph_height = Config.ui_config('graph_height')
 
 @module.server
 def update_filename_input(input: Inputs, output: Outputs, session: Session):
@@ -128,7 +130,7 @@ def create_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
             x=input.x_ax(),
             y=input.y_ax(),
             color=input.group_by(),
-            title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}",
+            title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}", height=graph_height
         )
         widget = go.FigureWidget(fig)
 

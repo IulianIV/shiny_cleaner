@@ -12,6 +12,9 @@ import plotly.graph_objs as go
 from config import Config
 from utils import synchronize_size
 
+from config import Config
+
+graph_height = Config.ui_config('graph_height')
 
 @module.server
 def create_distribution_inputs(input: Inputs, output: Outputs, session: Session):
@@ -99,7 +102,7 @@ def distribution_graph(input: Inputs, output: Outputs, session: Session, data_fr
             fig = px.histogram(
                 data_frame(),
                 x='value',
-                title=f'Histogram of {input.distributions()} distribution')
+                title=f'Histogram of {input.distributions()} distribution', height=graph_height)
             # fig = px.line(
             #     data_frame(),
             #     x=input.x_ax(),
