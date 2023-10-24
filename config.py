@@ -39,13 +39,13 @@ class Config:
     @staticmethod
     def set(config, name, value):
         if config not in Config.__configs:
-            raise NameError(f"'{config}' is not a valid config. Valid configs: {', '.join([c for c in Config.__configs]).strip()}")
+            raise NameError(f'"{config}" is not a valid config. Valid configs: {", ".join([c for c in Config.__configs]).strip()}')
 
         if config == 'ui':
             if name in Config.__ui_setters:
                 Config.__ui_config[name] = value
             else:
-                raise NameError("Name not accepted in set() method")
+                raise NameError('Name not accepted in set() method')
 
         if config == 'input':
             if name in Config.__input_setters:
@@ -54,4 +54,4 @@ class Config:
                 else:
                     Config.__input_config[name] = value
             else:
-                raise NameError("Name not accepted in set() method")
+                raise NameError('Name not accepted in set() method')

@@ -21,10 +21,10 @@ app_height = Config.ui_config('height')
 app_ui = x.ui.page_fillable(
     ui.navset_tab_card(
         ui.nav(
-            "Data Summarizer",
+            'Data Summarizer',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
-                    {"class": "p-3"},
+                    {'class': 'p-3'},
                     summary_inputs('summary'),
                     width=app_width
                 ),
@@ -43,7 +43,7 @@ app_ui = x.ui.page_fillable(
             'Distributions',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
-                    {"class": "p-3"},
+                    {'class': 'p-3'},
                     distribution_selection('distributions'), ui.output_ui('distribution_inputs'),
                     width=app_width
                 ),

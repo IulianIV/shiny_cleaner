@@ -13,6 +13,7 @@ from config import Config
 
 graph_height = Config.ui_config('graph_height')
 
+
 @module.server
 def create_distribution_inputs(input: Inputs, output: Outputs, session: Session):
     @output
@@ -27,13 +28,15 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         if input.distributions() == 'Gaussian':
             return (
                 ui.row(
-                    ui.column(3, ui.input_numeric("min", "Min", value=min_val)),
-                    ui.column(3, ui.input_numeric("max", "Max", value=max_val)),
-                    ui.column(3, ui.input_numeric("mean", "μ", value=mean)),
-                    ui.column(3, ui.input_numeric("sd", "σ", value=sd))
-                ), ui.input_switch("matrix", "Min x Max matrix"),
-                ui.input_slider("observations", 'Observations', min=min_val, max=max_val, value=max_val / 2),
-                ui.input_action_button("plot_distribution", "Plot")
+                    ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
+                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
+                    ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
+                    ui.column(3, ui.input_numeric('sd', 'σ', value=sd))
+                ), ui.input_switch('matrix', 'Min x Max matrix'),
+                ui.panel_conditional('not input.matrix',
+                                     ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                                                     value=max_val / 2)),
+                ui.input_action_button('plot_distribution', 'Plot')
             )
 
 
@@ -82,9 +85,9 @@ def load_distribution_data(input: Inputs, output: Outputs, session: Session, dat
     def data():
         return render.DataGrid(
             data_frame().round(3),
-            row_selection_mode="multiple",
-            width="100%",
-            height="100%",
+            row_selection_mode='multiple',
+            width='100%',
+            height='100%',
         )
 
 
@@ -99,7 +102,7 @@ def distribution_graph(input: Inputs, output: Outputs, session: Session, data_fr
 
             if input.matrix():
                 one_dim_df = plot_data.stack().reset_index()
-                one_dim_df.drop(['level_0', 'level_1'], axis=1, inplace=True)
+                one_dim_df.drop(one_dim_df.columns[:-1], axis=1, inplace=True)
                 one_dim_df.columns = ['value']
                 plot_data = one_dim_df
 

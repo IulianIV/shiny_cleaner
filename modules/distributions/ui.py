@@ -6,7 +6,7 @@ distributions = Config.input_config('distributions')
 @module.ui
 def distribution_selection():
     return (
-        ui.input_radio_buttons("distributions", f"Distributions", sorted(distributions)), ui.hr(),
+        ui.input_radio_buttons('distributions', f'Distributions', sorted(distributions)), ui.hr(),
         ui.p('Distribution settings'),
         ui.output_ui('inputs')
     )

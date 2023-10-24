@@ -60,7 +60,7 @@ def update_aggregator_input(input: Inputs, output: Outputs, session: Session, gr
         cols.remove(input.group_by())
 
         ui.update_selectize(
-            "aggregator",
+            'aggregator',
             choices=cols,
             selected=None
         )
@@ -99,9 +99,9 @@ def load_summary_data(input: Inputs, output: Outputs, session: Session, original
 
         return render.DataGrid(
             data_frame().round(2),
-            row_selection_mode="multiple",
-            width="100%",
-            height="100%",
+            row_selection_mode='multiple',
+            width='100%',
+            height='100%',
         )
 
 
@@ -130,11 +130,11 @@ def create_graph(input: Inputs, output: Outputs, session: Session, filtered_df):
             x=input.x_ax(),
             y=input.y_ax(),
             color=input.group_by(),
-            title=f"{input.x_ax().title()} vs. {input.y_ax().replace('_', ' ').title()}", height=graph_height
+            title=f'{input.x_ax().title()} vs. {input.y_ax().replace("_", " ").title()}', height=graph_height
         )
         widget = go.FigureWidget(fig)
 
-        @synchronize_size("graph")
+        @synchronize_size('graph')
         def on_size_changed(width, height):
             widget.layout.width = width
             widget.layout.height = height
