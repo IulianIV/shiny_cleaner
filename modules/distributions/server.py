@@ -43,6 +43,8 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         scale = Config.input_config('distributions_scale')
         prob = Config.input_config('distributions_probability')
         trials = Config.input_config('distributions_trials')
+        low = Config.input_config('distributions_low')
+        high = Config.input_config('distributions_high')
 
         if input.distributions() == 'Normal':
             return (
@@ -92,6 +94,15 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                 distributions_ui_defaults['slider'],
                 distributions_ui_defaults['plot_btn']
             )
+        if input.distributions() == 'Uniform':
+            return (
+                ui.row(distributions_ui_defaults['numerics'],
+                       ui.column(4, ui.input_numeric('low', 'Low', value=low)),
+                       ui.column(4, ui.input_numeric('high', 'High', value=high)),
+                       ), distributions_ui_defaults['switch'],
+                distributions_ui_defaults['slider'],
+                distributions_ui_defaults['plot_btn']
+            )
 
 
 # TODO add a way to show data about the distribution: set mean and sd, calculated mean and sd etc
@@ -113,10 +124,11 @@ def test_text(input: Inputs, output: Outputs, session: Session):
 # TODO Also, even if the UI is generated, providing values >1 or <0 in the input, even with the functionality below to
 #   update it to permitted values, it first runs the DataFrame generation with the actual wrong values.
 #   This raises a ValueError
+# TODO a solution could be do add different update functions
 @module.server
 def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
-    @reactive.event(input.min, input.max, input.prob)
+    @reactive.event(input.min, input.max)
     # all probability checks removed until #1 is fixed
     # @reactive.event(input.min, input.max, input.prob)
     def update():
@@ -188,6 +200,17 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
 
             distribution_df = create_distribution_df(input.distributions().lower(),
                                                      {'trials': trials, 'prob': prob, 'obs': obs, 'min': input.min,
+                                                      'max': input.max},
+                                                     input.matrix)
+
+            data_frame.set(distribution_df)
+
+        if input.distributions() == 'Uniform':
+            low = input.low()
+            high = input.high()
+
+            distribution_df = create_distribution_df(input.distributions().lower(),
+                                                     {'low': low, 'high': high, 'obs': obs, 'min': input.min,
                                                       'max': input.max},
                                                      input.matrix)
 

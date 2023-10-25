@@ -21,7 +21,7 @@ class Config:
     __input_config = {
         'summary_operations': ['min', 'max', 'mean'],
         'summary_fallback': ['count'],
-        'distributions': ['Discrete Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Normal', 'Exponential',
+        'distributions': ['Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Normal', 'Exponential',
                           'Geometric'],
         'distributions_mean_mu': 1,
         'distributions_standard_deviation_sigma': 1.1,
@@ -30,7 +30,9 @@ class Config:
         'distributions_events': 5,
         'distributions_scale': 5,
         'distributions_probability': 0.35,
-        'distributions_trials': 10
+        'distributions_trials': 10,
+        'distributions_low': -1,
+        'distributions_high': 0
     }
 
     @staticmethod
