@@ -75,10 +75,7 @@ def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.rea
     """
 
     if dist_type not in distribution_types:
-        print(dist_type)
-        print(distribution_types)
         raise ValueError(f'Selected distribution "{dist_type}" is not a valid distribution in numpy.random .')
-
     # basically calls `numpy.random.dist_type` and unpacks the contents of `dist_args` as arguments
     np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max']])
     dist_df = pd.DataFrame(data=np_dist, index=range(1, len(np_dist) + 1),
