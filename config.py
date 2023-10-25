@@ -1,5 +1,6 @@
 from numpy import random
 
+
 class Config:
     __configs = ['ui', 'input']
 
@@ -11,7 +12,8 @@ class Config:
     __ui_config = {
         'width': 500,
         'height': 1200,
-        'graph_height': 550
+        'graph_height': 550,
+        'graph_height_percent': '100%'
     }
     __server_config = {
         'distribution_types': random.__all__
@@ -19,8 +21,7 @@ class Config:
     __input_config = {
         'summary_operations': ['min', 'max', 'mean'],
         'summary_fallback': ['count'],
-        'distributions': ['Discrete Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Gaussian', 'Exponential',
-                          'Negative Binomial',
+        'distributions': ['Discrete Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Normal', 'Exponential',
                           'Geometric'],
         'distributions_mean_mu': 1,
         'distributions_standard_deviation_sigma': 1.1,
@@ -28,7 +29,8 @@ class Config:
         'distributions_max': 100,
         'distributions_events': 5,
         'distributions_scale': 5,
-        'distributions_probability': 0.35
+        'distributions_probability': 0.35,
+        'distributions_trials': 10
     }
 
     @staticmethod
@@ -46,7 +48,8 @@ class Config:
     @staticmethod
     def set(config, name, value):
         if config not in Config.__configs:
-            raise NameError(f'"{config}" is not a valid config. Valid configs: {", ".join([c for c in Config.__configs]).strip()}')
+            raise NameError(
+                f'"{config}" is not a valid config. Valid configs: {", ".join([c for c in Config.__configs]).strip()}')
 
         if config == 'ui':
             if name in Config.__ui_setters:
