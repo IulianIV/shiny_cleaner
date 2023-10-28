@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 import shiny.experimental as x
@@ -12,6 +13,7 @@ from utils import synchronize_size, two_dim_to_one_dim, create_distribution_df
 from config import Config
 
 graph_height = Config.ui_config('graph_height')
+distributions = Config.input_config('distributions')
 
 
 @module.server
@@ -22,7 +24,6 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
     def inputs():
         min_val = Config.input_config('distributions_min')
         max_val = Config.input_config('distributions_max')
-
         sd = Config.input_config('distributions_standard_deviation_sigma')
         mean = Config.input_config('distributions_mean_mu')
         events = Config.input_config('distributions_events')
@@ -56,53 +57,42 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                                     ui.column(4, ui.input_numeric('high', 'High', value=high)))
 
         return (
-            ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                   ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
-                   distribution_ui_body,
-                   ), x.ui.tooltip(ui.input_switch('matrix', 'Matrix'),
-                                   # TODO find a way to show this as `(input.min(), input.max())` with actual values
-                                   "(Min, Max) matrix of values",
-                                   id="matrix_tip", placement='left'
-                                   ),
-            ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
-                            value=max_val / 2),
-            ui.input_action_button('plot_distribution', 'Plot'),
-            ui.output_ui("test_text")
-        )
+                ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
+                       ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
+                       distribution_ui_body,
+                       ), x.ui.tooltip(ui.input_switch('matrix', 'Matrix'),
+                                       # TODO find a way to show this as `(input.min(), input.max())` with actual values
+                                       "(Min, Max) matrix of values",
+                                       id="matrix_tip", placement='left'
+                                       ),
+                ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                                value=max_val / 2),
+                ui.input_action_button('plot_distribution', 'Plot'),
+                )
 
 
-# TODO add a way to show data about the distribution: set mean and sd, calculated mean and sd etc
 @module.server
-def test_text(input: Inputs, output: Outputs, session: Session):
+def create_distribution_details(input: Inputs, output: Outputs, session: Session, data_frame):
     @output
     @render.ui
-    def test():
-        return ui.TagList(
-            ui.input_text("label", "Label"),
-        )
-
-    return test
+    def details():
+        actual_mean = np.mean(data_frame())
+        return ui.code(f"Actual mean {actual_mean}")
 
 
 @module.server
 def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.min, input.max)
-    # all probability checks removed until #1 is fixed
-    # @reactive.event(input.min, input.max, input.prob)
     def update():
         current_value = input.observations()
         c_min_val = input.min()
         c_max_val = input.max()
-        # prob_val = input.prob()
 
         if c_min_val > c_max_val:
             ui.update_numeric('min', value=c_max_val)
             ui.update_numeric('max', value=c_min_val)
             ui.update_slider('observations', min=c_max_val, max=c_min_val, value=current_value)
-
-        # if prob_val > 1 or 0 > prob_val:
-        #     ui.update_numeric('prob', value=1)
 
         ui.update_slider('observations', min=c_min_val, max=c_max_val, value=current_value)
 

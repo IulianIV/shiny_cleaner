@@ -12,7 +12,8 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
 
 from modules.distributions.ui import distribution_selection
 from modules.distributions.server import (create_distribution_inputs, load_distribution_data, update_distribution_prob,
-                                          update_distribution_inputs, create_distribution_data_set, distribution_graph)
+                                          update_distribution_inputs, create_distribution_data_set, distribution_graph,
+                                          create_distribution_details)
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -48,7 +49,9 @@ app_ui = x.ui.page_fillable(
             x.ui.layout_sidebar(
                 x.ui.sidebar(
                     {'class': 'p-3'},
-                    distribution_selection('distributions'), ui.output_ui('distribution_inputs'),
+                    distribution_selection('distributions'),
+                    ui.output_ui('distribution_inputs'),
+                    ui.output_ui('distribution_details'),
                     width=app_width
                 ),
                 x.ui.layout_column_wrap(
@@ -85,6 +88,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     @render.ui
     def distribution_inputs():
         create_distribution_inputs('distributions')
+
+    @output
+    @render.ui
+    def distribution_details():
+        create_distribution_details('distributions', distribution_df)
 
     update_distribution_inputs('distributions')
 
