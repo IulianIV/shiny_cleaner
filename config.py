@@ -32,7 +32,15 @@ class Config:
         'distributions_probability': 0.35,
         'distributions_trials': 10,
         'distributions_low': -1,
-        'distributions_high': 0
+        'distributions_high': 0,
+        'distributions_prop': {
+            'Uniform': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
+            'Binomial': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF'],
+            'Poisson': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF'],
+            'Normal': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
+            'Exponential': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
+            'Geometric': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF']
+        }
     }
 
     @staticmethod
