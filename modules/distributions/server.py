@@ -23,20 +23,6 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         min_val = Config.input_config('distributions_min')
         max_val = Config.input_config('distributions_max')
 
-        distributions_ui_defaults = {
-            'numerics': (ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                         ui.column(3, ui.input_numeric('max', 'Max', value=max_val))),
-            'switch': (x.ui.tooltip(
-                ui.input_switch('matrix', 'Matrix'),
-                # TODO find a way to show this as `(input.min(), input.max())` with actual values
-                "(Min, Max) matrix of values",
-                id="matrix_tip", placement='left'
-            )),
-            'slider': (ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
-                                       value=max_val / 2)),
-            'plot_btn': (ui.input_action_button('plot_distribution', 'Plot'))
-        }
-
         sd = Config.input_config('distributions_standard_deviation_sigma')
         mean = Config.input_config('distributions_mean_mu')
         events = Config.input_config('distributions_events')
@@ -70,26 +56,32 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                                     ui.column(4, ui.input_numeric('high', 'High', value=high)))
 
         return (
-            ui.row(distributions_ui_defaults['numerics'],
+            ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
+                   ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
                    distribution_ui_body,
-                   ), distributions_ui_defaults['switch'],
-            distributions_ui_defaults['slider'],
-            distributions_ui_defaults['plot_btn']
+                   ), x.ui.tooltip(ui.input_switch('matrix', 'Matrix'),
+                                   # TODO find a way to show this as `(input.min(), input.max())` with actual values
+                                   "(Min, Max) matrix of values",
+                                   id="matrix_tip", placement='left'
+                                   ),
+            ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                            value=max_val / 2),
+            ui.input_action_button('plot_distribution', 'Plot'),
+            ui.output_ui("test_text")
         )
 
 
 # TODO add a way to show data about the distribution: set mean and sd, calculated mean and sd etc
-"""
-ui.output_text_verbatim("test", placeholder=False)
 @module.server
 def test_text(input: Inputs, output: Outputs, session: Session):
     @output
-    @render.text
+    @render.ui
     def test():
-        return input.distributions()
-    return test
+        return ui.TagList(
+            ui.input_text("label", "Label"),
+        )
 
-"""
+    return test
 
 
 @module.server
