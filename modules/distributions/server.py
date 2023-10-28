@@ -119,7 +119,37 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
         obs = input.observations()
         final_data = None
 
+        # TODO Features of the distribution to implement, tabular and graphical, will be shown in each
+        #   distributions if-conditional
+        #   The calculation of some of these features (to be decided which) should be done automatically
+        #   The graphical representation should be made by drop-down choice, where possible.
+        #   Add a Comprehensive view of Distribution Details in the side-bar
+
         if input.distributions() == 'Normal':
+            # TODO Normal feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pdf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpdf;
+            * logcdf;
+            * sf;
+            * logsf;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval
+            * moment
+            * entropy;
+
+            More complex functionality to implement:
+            * expect
+            * fit
+            """
             sd = input.sd()
             mean = input.mean()
 
@@ -132,6 +162,28 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
             final_data = distribution_df
 
         if input.distributions() == 'Poisson':
+            # TODO Poisson feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pmf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpmf;
+            * logcdf;
+            * sf;
+            * logsf;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval
+            * entropy;
+
+            More complex functionality to implement:
+            * expect
+            """
             events = input.events()
 
             distribution_df = create_distribution_df(input.distributions().lower(),
@@ -143,6 +195,30 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
             final_data = distribution_df
 
         if input.distributions() == 'Exponential':
+            # TODO Exponential feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pdf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpdf;
+            * logcdf;
+            * sf;
+            * logsf;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval;
+            * moment;
+            * entropy;
+
+            More complex functionality to implement:
+            * expect
+            * fit
+            """
             scale = input.scale()
 
             distribution_df = create_distribution_df(input.distributions().lower(),
@@ -155,6 +231,28 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
             final_data = distribution_df
 
         if input.distributions() == 'Geometric':
+            # TODO Geometric feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pmf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpmf;
+            * logcdf;
+            * sf;
+            * logsf;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval
+            * entropy;
+
+            More complex functionality to implement:
+            * expect
+            """
             prob = input.prob()
 
             distribution_df = create_distribution_df(input.distributions().lower(),
@@ -167,19 +265,72 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
             final_data = distribution_df
 
         if input.distributions() == 'Binomial':
+            # TODO Binomial feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pmf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpmf;
+            * logcdf;
+            * sf;
+            * entropy;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval
+
+            More complex functionality to implement:
+            * expect
+            """
+
             prob = input.prob()
             trials = input.trials()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'trials': trials, 'prob': prob, 'obs': obs, 'min': input.min,
-                                                      'max': input.max},
-                                                     input.matrix)
+            # distribution_df = create_distribution_df(input.distributions().lower(),
+            #                                          {'trials': trials, 'prob': prob, 'obs': obs, 'min': input.min,
+            #                                           'max': input.max},
+            #                                          input.matrix)
 
-            data_frame.set(distribution_df)
+            distribution_array = binom.rvs(trials, prob, size=obs)
+            print([attr for attr in binom.__dir__() if '_' not in attr])
+            new_df = pandas.DataFrame(distribution_array)
+            print(binom.cdf(distribution_array, trials, prob))
+            new_df.columns = ['value']
+            data_frame.set(new_df)
 
-            final_data = distribution_df
+            data_frame.set(new_df)
+
+            final_data = new_df
 
         if input.distributions() == 'Uniform':
+            # TODO Exponential feature list
+            """
+            Pre-rendered data: the table will be automatically rendered with this data:
+            * pdf;
+            * cdf;
+            * stats -> only in side-bar
+
+            Data to show by user choice:
+            * logpdf;
+            * logcdf;
+            * sf;
+            * logsf;
+
+            Possibility of implementation:
+            * ppf;
+            * isf;
+            * interval;
+            * moment;
+            * entropy;
+
+            More complex functionality to implement:
+            * expect
+            * fit
+            """
             low = input.low()
             high = input.high()
 
