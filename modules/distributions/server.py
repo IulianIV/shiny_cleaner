@@ -46,63 +46,36 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
         low = Config.input_config('distributions_low')
         high = Config.input_config('distributions_high')
 
+        distribution_ui_body = None
+
         if input.distributions() == 'Normal':
-            return (
-                ui.row(
-                    distributions_ui_defaults['numerics'],
-                    ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
-                    ui.column(3, ui.input_numeric('sd', 'σ', value=sd))
-                ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
+            distribution_ui_body = (ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
+                                    ui.column(3, ui.input_numeric('sd', 'σ', value=sd)))
 
-            )
-        if input.distributions() == 'Poisson':
-            return (
-                ui.row(
-                    distributions_ui_defaults['numerics'],
-                    ui.column(4, ui.input_numeric('events', 'Events', value=events)),
-                ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
-            )
+        elif input.distributions() == 'Poisson':
+            distribution_ui_body = ui.column(4, ui.input_numeric('events', 'Events', value=events))
 
-        if input.distributions() == 'Exponential':
-            return (
-                ui.row(distributions_ui_defaults['numerics'],
-                       ui.column(4, ui.input_numeric('scale', 'Scale', value=scale)),
-                       ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
-            )
+        elif input.distributions() == 'Exponential':
+            distribution_ui_body = ui.column(4, ui.input_numeric('scale', 'Scale', value=scale))
 
-        if input.distributions() == 'Geometric':
-            return (
-                ui.row(
-                    distributions_ui_defaults['numerics'],
-                    ui.column(4, ui.input_numeric('prob', 'Probability', value=prob)),
-                ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
-            )
-        if input.distributions() == 'Binomial':
-            return (
-                ui.row(distributions_ui_defaults['numerics'],
-                       ui.column(4, ui.input_numeric('trials', 'Trials', value=trials)),
-                       ui.column(4, ui.input_numeric('prob', 'Probability', value=prob)),
-                       ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
-            )
-        if input.distributions() == 'Uniform':
-            return (
-                ui.row(distributions_ui_defaults['numerics'],
-                       ui.column(4, ui.input_numeric('low', 'Low', value=low)),
-                       ui.column(4, ui.input_numeric('high', 'High', value=high)),
-                       ), distributions_ui_defaults['switch'],
-                distributions_ui_defaults['slider'],
-                distributions_ui_defaults['plot_btn']
-            )
+        elif input.distributions() == 'Geometric':
+            distribution_ui_body = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob))
+
+        elif input.distributions() == 'Binomial':
+            distribution_ui_body = (ui.column(4, ui.input_numeric('trials', 'Trials', value=trials)),
+                                    ui.column(4, ui.input_numeric('prob', 'Probability', value=prob)))
+
+        elif input.distributions() == 'Uniform':
+            distribution_ui_body = (ui.column(4, ui.input_numeric('low', 'Low', value=low)),
+                                    ui.column(4, ui.input_numeric('high', 'High', value=high)))
+
+        return (
+            ui.row(distributions_ui_defaults['numerics'],
+                   distribution_ui_body,
+                   ), distributions_ui_defaults['switch'],
+            distributions_ui_defaults['slider'],
+            distributions_ui_defaults['plot_btn']
+        )
 
 
 # TODO add a way to show data about the distribution: set mean and sd, calculated mean and sd etc
@@ -141,6 +114,7 @@ def update_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
         ui.update_slider('observations', min=c_min_val, max=c_max_val, value=current_value)
 
+
 @module.server
 def update_distribution_prob(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
@@ -152,6 +126,7 @@ def update_distribution_prob(input: Inputs, output: Outputs, session: Session):
             ui.update_numeric('prob', value=1)
         elif prob_value <= 0:
             ui.update_numeric('prob', value=0.1)
+
 
 @module.server
 def create_distribution_data_set(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
