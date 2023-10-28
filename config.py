@@ -21,7 +21,7 @@ class Config:
     __input_config = {
         'summary_operations': ['min', 'max', 'mean'],
         'summary_fallback': ['count'],
-        'distributions': ['Uniform', 'Bernoulli', 'Binomial', 'Poisson', 'Normal', 'Exponential',
+        'distributions': ['Uniform', 'Binomial', 'Poisson', 'Normal', 'Exponential',
                           'Geometric'],
         'distributions_mean_mu': 1,
         'distributions_standard_deviation_sigma': 1.1,

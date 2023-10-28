@@ -1,5 +1,5 @@
 from __future__ import annotations
-import asyncio
+
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 import shiny.experimental as x
@@ -119,12 +119,6 @@ def test_text(input: Inputs, output: Outputs, session: Session):
 """
 
 
-# TODO check #1 issue in GitHub. Apparently, having the `input.prob()` check in place, and inside the function, breaks
-#   functionality and the function fails is called on a distribution which does NOT generate the UI with that input.
-# TODO Also, even if the UI is generated, providing values >1 or <0 in the input, even with the functionality below to
-#   update it to permitted values, it first runs the DataFrame generation with the actual wrong values.
-#   This raises a ValueError
-# TODO a solution could be do add different update functions
 @module.server
 def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
@@ -147,12 +141,24 @@ def update_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
         ui.update_slider('observations', min=c_min_val, max=c_max_val, value=current_value)
 
+@module.server
+def update_distribution_prob(input: Inputs, output: Outputs, session: Session):
+    @reactive.Effect
+    @reactive.event(input.prob)
+    def update():
+        prob_value = input.prob()
+
+        if prob_value > 1:
+            ui.update_numeric('prob', value=1)
+        elif prob_value <= 0:
+            ui.update_numeric('prob', value=0.1)
 
 @module.server
 def create_distribution_data_set(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
-    @reactive.Effect
+    @reactive.Calc
     def data_set():
         obs = input.observations()
+        final_data = None
 
         if input.distributions() == 'Normal':
             sd = input.sd()
@@ -162,8 +168,9 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      {'mean': mean, 'sd': sd, 'obs': obs, 'min': input.min,
                                                       'max': input.max},
                                                      input.matrix)
-
             data_frame.set(distribution_df)
+
+            final_data = distribution_df
 
         if input.distributions() == 'Poisson':
             events = input.events()
@@ -173,6 +180,8 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      input.matrix)
 
             data_frame.set(distribution_df)
+
+            final_data = distribution_df
 
         if input.distributions() == 'Exponential':
             scale = input.scale()
@@ -184,6 +193,8 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
 
             data_frame.set(distribution_df)
 
+            final_data = distribution_df
+
         if input.distributions() == 'Geometric':
             prob = input.prob()
 
@@ -193,6 +204,8 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      input.matrix)
 
             data_frame.set(distribution_df)
+
+            final_data = distribution_df
 
         if input.distributions() == 'Binomial':
             prob = input.prob()
@@ -205,6 +218,8 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
 
             data_frame.set(distribution_df)
 
+            final_data = distribution_df
+
         if input.distributions() == 'Uniform':
             low = input.low()
             high = input.high()
@@ -215,6 +230,12 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      input.matrix)
 
             data_frame.set(distribution_df)
+
+            final_data = distribution_df
+
+        return final_data
+
+    return data_set
 
 
 @module.server

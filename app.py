@@ -11,9 +11,8 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
                                     update_graph_input, load_summary_data, create_graph, filter_df)
 
 from modules.distributions.ui import distribution_selection
-from modules.distributions.server import (create_distribution_inputs, load_distribution_data,
+from modules.distributions.server import (create_distribution_inputs, load_distribution_data, update_distribution_prob,
                                           update_distribution_inputs, create_distribution_data_set, distribution_graph)
-
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -89,9 +88,9 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     update_distribution_inputs('distributions')
 
-    create_distribution_data_set('distributions', distribution_df)
+    update_distribution_prob('distributions')
 
-    load_distribution_data('distributions', distribution_df)
+    load_distribution_data('distributions', create_distribution_data_set('distributions', distribution_df))
 
     distribution_graph('distributions', distribution_df)
 
