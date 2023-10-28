@@ -61,7 +61,6 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                        ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
                        distribution_ui_body,
                        ), x.ui.tooltip(ui.input_switch('matrix', 'Matrix'),
-                                       # TODO find a way to show this as `(input.min(), input.max())` with actual values
                                        "(Min, Max) matrix of values",
                                        id="matrix_tip", placement='left'
                                        ),
