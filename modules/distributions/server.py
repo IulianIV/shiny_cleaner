@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pandas
 from scipy.stats import binom
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
@@ -14,10 +15,10 @@ from config import Config
 
 graph_height = Config.ui_config('graph_height')
 distributions = Config.input_config('distributions')
-
+distributions_prop = Config.input_config('distributions_prop')
 
 @module.server
-def create_distribution_inputs(input: Inputs, output: Outputs, session: Session):
+def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     @reactive.event(input.distributions)
@@ -49,18 +50,19 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
             distribution_ui_body = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob))
 
         elif input.distributions() == 'Binomial':
-            distribution_ui_body = (ui.column(4, ui.input_numeric('trials', 'Trials', value=trials)),
-                                    ui.column(4, ui.input_numeric('prob', 'Probability', value=prob)))
+            distribution_ui_body = (ui.column(3, ui.input_numeric('trials', 'Trials', value=trials)),
+                                    ui.column(3, ui.input_numeric('prob', 'Probability', value=prob)))
 
         elif input.distributions() == 'Uniform':
-            distribution_ui_body = (ui.column(4, ui.input_numeric('low', 'Low', value=low)),
-                                    ui.column(4, ui.input_numeric('high', 'High', value=high)))
+            distribution_ui_body = (ui.column(3, ui.input_numeric('low', 'Low', value=low)),
+                                    ui.column(3, ui.input_numeric('high', 'High', value=high)))
 
         return (
             ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
                    distribution_ui_body,
                    ),
+            ui.input_selectize('prop', 'Show Properties', distributions_prop['Binomial'], multiple=False),
             ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                             value=max_val / 2),
             ui.input_action_button('plot_distribution', 'Plot'),
@@ -68,22 +70,20 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
 
 @module.server
-def create_distribution_details(input: Inputs, output: Outputs, session: Session, data_frame):
+def create_dist_details(input: Inputs, output: Outputs, session: Session, data_frame):
     @output
     @render.text
     def details():
-        # to_array = data_frame().to_numpy()
+        stats_body = '\n'.join([f'{k}: {v}' for k, v in data_frame.items()])
 
-        # actual_mean = np.round(np.mean(to_array), 4)
-        # actual_sd = np.round(np.std(to_array), 4)
         return (
             f'\t~~~{input.distributions()} Distribution details~~~\n'
-            # f'mean: ;\tsd: '
+            f'{stats_body}'
         )
 
 
 @module.server
-def update_distribution_inputs(input: Inputs, output: Outputs, session: Session):
+def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.min, input.max)
     def update():
@@ -100,7 +100,15 @@ def update_distribution_inputs(input: Inputs, output: Outputs, session: Session)
 
 
 @module.server
-def update_distribution_prob(input: Inputs, output: Outputs, session: Session):
+def update_dist_prop_select(input: Inputs, output: Outputs, session: Session):
+    @reactive.Effect
+    def update():
+        props = distributions_prop[input.distributions()]
+        ui.update_selectize('prop', choices=props, selected=None)
+
+
+@module.server
+def update_dist_prob(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.prob)
     def update():
@@ -113,11 +121,13 @@ def update_distribution_prob(input: Inputs, output: Outputs, session: Session):
 
 
 @module.server
-def create_distribution_data_set(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
+def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
+    @output
+    @render.data_frame
     @reactive.Calc
-    def data_set():
+    def data():
         obs = input.observations()
-        final_data = None
+        dist_data = dict()
 
         # TODO Features of the distribution to implement, tabular and graphical, will be shown in each
         #   distributions if-conditional
@@ -157,9 +167,7 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      {'mean': mean, 'sd': sd, 'obs': obs, 'min': input.min,
                                                       'max': input.max},
                                                      input.matrix)
-            data_frame.set(distribution_df)
-
-            final_data = distribution_df
+            dist_array.set(distribution_df)
 
         if input.distributions() == 'Poisson':
             # TODO Poisson feature list
@@ -190,9 +198,7 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                      {'events': events, 'obs': obs, 'min': input.min, 'max': input.max},
                                                      input.matrix)
 
-            data_frame.set(distribution_df)
-
-            final_data = distribution_df
+            dist_array.set(distribution_df)
 
         if input.distributions() == 'Exponential':
             # TODO Exponential feature list
@@ -226,9 +232,7 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                       'max': input.max},
                                                      input.matrix)
 
-            data_frame.set(distribution_df)
-
-            final_data = distribution_df
+            dist_array.set(distribution_df)
 
         if input.distributions() == 'Geometric':
             # TODO Geometric feature list
@@ -260,28 +264,27 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                       'max': input.max},
                                                      input.matrix)
 
-            data_frame.set(distribution_df)
-
-            final_data = distribution_df
+            dist_array.set(distribution_df)
 
         if input.distributions() == 'Binomial':
             # TODO Binomial feature list
             """
             Pre-rendered data: the table will be automatically rendered with this data:
-            * pmf;
-            * cdf;
-            * stats -> only in side-bar
+            * pmf; Done
+            * cdf; Done
+            * stats -> only in side-bar Done
 
             Data to show by user choice:
             * logpmf;
             * logcdf;
             * sf;
-            * entropy;
+            * logsf;
 
             Possibility of implementation:
             * ppf;
             * isf;
-            * interval
+            * interval;
+            * entropy;
 
             More complex functionality to implement:
             * expect
@@ -290,21 +293,33 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
             prob = input.prob()
             trials = input.trials()
 
-            # distribution_df = create_distribution_df(input.distributions().lower(),
-            #                                          {'trials': trials, 'prob': prob, 'obs': obs, 'min': input.min,
-            #                                           'max': input.max},
-            #                                          input.matrix)
-
             distribution_array = binom.rvs(trials, prob, size=obs)
-            print([attr for attr in binom.__dir__() if '_' not in attr])
-            new_df = pandas.DataFrame(distribution_array)
-            print(binom.cdf(distribution_array, trials, prob))
-            new_df.columns = ['value']
-            data_frame.set(new_df)
 
-            data_frame.set(new_df)
+            pmf = binom.pmf(distribution_array, trials, prob)
+            cdf = binom.cdf(distribution_array, trials, prob)
+            stats = binom.stats(trials, prob, moments='mvsk')
 
-            final_data = new_df
+            dist_array = np.vstack((distribution_array, pmf, cdf))
+
+            if input.prop() == 'Log PMF':
+                log_pmf = binom.logpmf(distribution_array, trials, prob)
+                dist_array = np.vstack((dist_array, log_pmf))
+            elif input.prop() == 'Log CDF':
+                log_cdf = binom.logcdf(distribution_array, trials, prob)
+                dist_array = np.vstack((dist_array, log_cdf))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.prop() == 'Log PMF':
+                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log PMF']
+            elif input.prop() == 'Log CDF':
+                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log CDF']
+            else:
+                new_df.columns = ['Observations', 'CDF', 'PMF']
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
 
         if input.distributions() == 'Uniform':
             # TODO Exponential feature list
@@ -339,39 +354,28 @@ def create_distribution_data_set(input: Inputs, output: Outputs, session: Sessio
                                                       'max': input.max},
                                                      input.matrix)
 
-            data_frame.set(distribution_df)
+            dist_array.set(distribution_df)
 
-            final_data = distribution_df
+        data_frame.set(dist_data)
 
-        return final_data
-
-    return data_set
-
-
-@module.server
-def load_distribution_data(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
-    @output
-    @render.data_frame
-    def data():
         return render.DataGrid(
-            data_frame().round(3),
+            dist_data['distribution_df'].round(3),
             row_selection_mode='multiple',
             width='100%',
             height='100%',
         )
 
+    return data
+
 
 @module.server
-def distribution_graph(input: Inputs, output: Outputs, session: Session, data_frame):
+def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
     @output
     @render_widget
     @reactive.event(input.plot_distribution)
     def graph():
         plot_data = data_frame()
         widget = None
-
-        if input.matrix():
-            plot_data = two_dim_to_one_dim(plot_data, 'value')
 
         # Create the plot
         hist = px.histogram(
