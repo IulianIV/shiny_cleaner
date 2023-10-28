@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import numpy as np
+import pandas
+from scipy.stats import binom
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
-import shiny.experimental as x
 
 import plotly.express as px
 import plotly.graph_objs as go
@@ -57,26 +57,29 @@ def create_distribution_inputs(input: Inputs, output: Outputs, session: Session)
                                     ui.column(4, ui.input_numeric('high', 'High', value=high)))
 
         return (
-                ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                       ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
-                       distribution_ui_body,
-                       ), x.ui.tooltip(ui.input_switch('matrix', 'Matrix'),
-                                       "(Min, Max) matrix of values",
-                                       id="matrix_tip", placement='left'
-                                       ),
-                ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
-                                value=max_val / 2),
-                ui.input_action_button('plot_distribution', 'Plot'),
-                )
+            ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
+                   ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
+                   distribution_ui_body,
+                   ),
+            ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                            value=max_val / 2),
+            ui.input_action_button('plot_distribution', 'Plot'),
+        )
 
 
 @module.server
 def create_distribution_details(input: Inputs, output: Outputs, session: Session, data_frame):
     @output
-    @render.ui
+    @render.text
     def details():
-        actual_mean = np.mean(data_frame())
-        return ui.code(f"Actual mean {actual_mean}")
+        # to_array = data_frame().to_numpy()
+
+        # actual_mean = np.round(np.mean(to_array), 4)
+        # actual_sd = np.round(np.std(to_array), 4)
+        return (
+            f'\t~~~{input.distributions()} Distribution details~~~\n'
+            # f'mean: ;\tsd: '
+        )
 
 
 @module.server

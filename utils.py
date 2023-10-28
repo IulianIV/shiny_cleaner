@@ -63,8 +63,7 @@ def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tupl
     return summarized_df
 
 
-def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.reactive.Value],
-                           cond_input: shiny.reactive.Value, column: str = 'value'):
+def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.reactive.Value], column: str = 'value'):
     """
     Create a distribution function given a distribution type and reactive inputs
     :param dist_type: Must be a distribution type found within `numpy.random`
@@ -76,17 +75,11 @@ def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.rea
 
     if dist_type not in distribution_types:
         raise ValueError(f'Selected distribution "{dist_type}" is not a valid distribution in numpy.random .')
+
     # basically calls `numpy.random.dist_type` and unpacks the contents of `dist_args` as arguments
     np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max']])
     dist_df = pd.DataFrame(data=np_dist, index=range(1, len(np_dist) + 1),
                            columns=[column])
-
-    if cond_input():
-        np_dist = getattr(np.random, dist_type)(
-            *[val for key, val in dist_args.items() if key not in ['min', 'max', 'obs']],
-            (dist_args['min'](), dist_args['max']()))
-        dist_df = pd.DataFrame(data=np_dist[:, :], index=range(1, len(np_dist) + 1),
-                               columns=[f'{column}_{x}' for x in range(1, np_dist.shape[1] + 1)])
 
     return dist_df
 
