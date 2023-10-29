@@ -15,33 +15,48 @@ class Config:
         'graph_height': 550,
         'graph_height_percent': '100%'
     }
-    __server_config = {
-        'distribution_types': random.__all__
-    }
+    __server_config = {}
     __input_config = {
-        'summary_operations': ['min', 'max', 'mean'],
-        'summary_fallback': ['count'],
-        'distributions': ['Uniform', 'Binomial', 'Poisson', 'Normal', 'Exponential',
-                          'Geometric'],
-        'distributions_mean_mu': 1,
-        'distributions_standard_deviation_sigma': 1.1,
-        'distributions_min': 10,
-        'distributions_max': 100,
-        'distributions_events': 5,
-        'distributions_scale': 5,
-        'distributions_probability': 0.35,
-        'distributions_trials': 10,
-        'distributions_low': -1,
-        'distributions_high': 0,
-        'distributions_prop': {
-            'Uniform': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
-            'Binomial': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF'],
-            'Poisson': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF'],
-            'Normal': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
-            'Exponential': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF'],
-            'Geometric': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF']
+        'summary': {
+            'operations': ['min', 'max', 'mean'],
+            'fallback': ['count']
+        },
+        'distributions': {
+            'continuous': {
+                'names': ['Uniform', 'Normal', 'Exponential'],
+                'methods': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF']
+            },
+            'discrete': {
+                'names': ['Binomial', 'Geometric', 'Poisson'],
+                'methods': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF']
+            },
+            'multivariate': {
+
+            },
+            'mean': 1,
+            'sd': 1.1,
+            'min_obs': 10,
+            'max_obs': 100,
+            'events': 5,
+            'scale': 5,
+            'probability': 0.35,
+            'trials': 10,
+            'low': -1,
+            'high': 0
         }
     }
+
+    def get_dist_methods(self, distribution: str):
+        continuous = self.__input_config['distributions']['continuous']
+        discrete = self.__input_config['distributions']['discrete']
+        multivariate = self.__input_config['distributions']['multivariate']
+
+        if distribution in continuous['names']:
+            return continuous['methods']
+        elif distribution in discrete['names']:
+            return discrete['methods']
+        elif distribution in multivariate['names']:
+            return multivariate['methods']
 
     @staticmethod
     def ui_config(name):
@@ -55,23 +70,25 @@ class Config:
     def input_config(name):
         return Config.__input_config[name]
 
-    @staticmethod
-    def set(config, name, value):
-        if config not in Config.__configs:
-            raise NameError(
-                f'"{config}" is not a valid config. Valid configs: {", ".join([c for c in Config.__configs]).strip()}')
-
-        if config == 'ui':
-            if name in Config.__ui_setters:
-                Config.__ui_config[name] = value
-            else:
-                raise NameError('Name not accepted in set() method')
-
-        if config == 'input':
-            if name in Config.__input_setters:
-                if isinstance(Config.__input_config[name], list):
-                    Config.__input_config[name].append(value)
-                else:
-                    Config.__input_config[name] = value
-            else:
-                raise NameError('Name not accepted in set() method')
+    # TODO reimplement this to work with the new Config structure
+    #   at the moment it wll not work as expected.
+    # @staticmethod
+    # def set(config, name, value):
+    #     if config not in Config.__configs:
+    #         raise NameError(
+    #             f'"{config}" is not a valid config. Valid configs: {", ".join([c for c in Config.__configs]).strip()}')
+    #
+    #     if config == 'ui':
+    #         if name in Config.__ui_setters:
+    #             Config.__ui_config[name] = value
+    #         else:
+    #             raise NameError('Name not accepted in set() method')
+    #
+    #     if config == 'input':
+    #         if name in Config.__input_setters:
+    #             if isinstance(Config.__input_config[name], list):
+    #                 Config.__input_config[name].append(value)
+    #             else:
+    #                 Config.__input_config[name] = value
+    #         else:
+    #             raise NameError('Name not accepted in set() method')
