@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pandas
-from scipy.stats import binom
+from scipy.stats import binom, uniform, geom, expon, poisson, norm
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 
@@ -20,6 +20,7 @@ dist_defaults = config.input_config('distributions')
 cont_dist = dist_defaults['continuous']
 discrete_dist = dist_defaults['discrete']
 dist_names = cont_dist['names'] + discrete_dist['names']
+
 
 @module.server
 def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
@@ -142,164 +143,157 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
         # TODO Features of the distribution to implement, tabular and graphical, will be shown in each
         #   distributions if-conditional
-        #   The calculation of some of these features (to be decided which) should be done automatically
         #   The graphical representation should be made by drop-down choice, where possible.
         #   Add a Comprehensive view of Distribution Details in the side-bar
+        # TODO Discrete, Continuous feature list
+        # TODO Research about the usage of loc, scale arguments in the distribution methods.
+        #   In some cases it seems to be the only way to actually increase the range of generated
+        #   distribution
+        """
+        ==== Discrete ====
+        To add functionalities:
+        * interval;
+        * entropy;
+
+        More complex functionality to implement:
+        * expect
+        
+        ==== Continuous ====
+        To add functionalities:
+        * interval;
+        * moment;
+        * entropy;
+
+        More complex functionality to implement:
+        * expect
+        """
 
         if input.distributions() == 'Normal':
-            # TODO Normal feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pdf;
-            * cdf;
-            * stats -> only in side-bar
-
-            Data to show by user choice:
-            * logpdf;
-            * logcdf;
-            * sf;
-            * logsf;
-
-            Possibility of implementation:
-            * ppf;
-            * isf;
-            * interval
-            * moment
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            * fit
-            """
             sd = input.sd()
             mean = input.mean()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'mean': mean, 'sd': sd, 'obs': obs, 'min': input.min,
-                                                      'max': input.max},
-                                                     input.matrix)
-            dist_array.set(distribution_df)
+            normal = norm(loc=mean, scale=sd)
+            norm_rvs = normal.rvs(size=obs)
+
+            pdf = normal.pdf(norm_rvs)
+            cdf = normal.cdf(norm_rvs)
+
+            stats = normal.stats(moments='mvsk')
+            fit_stats = uniform.fit(norm_rvs)
+            stats = stats + fit_stats
+
+            calc_user_option = getattr(normal, input.prop().replace(' ', '').lower())(norm_rvs)
+
+            if input.enbl_extra():
+                calc_extra_option = getattr(normal, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((norm_rvs, pdf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((norm_rvs, pdf, cdf, calc_user_option))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.enbl_extra():
+                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
+            else:
+                new_df.columns = [*cont_dist['standard'], input.prop()]
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in
+                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
 
         if input.distributions() == 'Poisson':
-            # TODO Poisson feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pmf;
-            * cdf;
-            * stats -> only in side-bar
-
-            Data to show by user choice:
-            * logpmf;
-            * logcdf;
-            * sf;
-            * logsf;
-
-            Possibility of implementation:
-            * ppf;
-            * isf;
-            * interval
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            """
             events = input.events()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'events': events, 'obs': obs, 'min': input.min, 'max': input.max},
-                                                     input.matrix)
+            poi = poisson(events)
+            poisson_rvs = poi.rvs(size=obs)
 
-            dist_array.set(distribution_df)
+            pmf = poi.pmf(poisson_rvs)
+            cdf = poi.cdf(poisson_rvs)
+            stats = poi.stats(moments='mvsk')
+
+            calc_user_option = getattr(poi, input.prop().replace(' ', '').lower())(poisson_rvs)
+
+            if input.enbl_extra():
+                calc_extra_option = getattr(poi, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((poisson_rvs, pmf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((poisson_rvs, pmf, cdf, calc_user_option))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.enbl_extra():
+                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
+            else:
+                new_df.columns = [*discrete_dist['standard'], input.prop()]
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
 
         if input.distributions() == 'Exponential':
-            # TODO Exponential feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pdf;
-            * cdf;
-            * stats -> only in side-bar
-
-            Data to show by user choice:
-            * logpdf;
-            * logcdf;
-            * sf;
-            * logsf;
-
-            Possibility of implementation:
-            * ppf;
-            * isf;
-            * interval;
-            * moment;
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            * fit
-            """
             scale = input.scale()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'scale': scale, 'obs': obs, 'min': input.min,
-                                                      'max': input.max},
-                                                     input.matrix)
+            exponential = expon(scale=scale)
+            expon_rvs = exponential.rvs(size=obs)
 
-            dist_array.set(distribution_df)
+            pdf = exponential.pdf(expon_rvs)
+            cdf = exponential.cdf(expon_rvs)
+
+            stats = exponential.stats(moments='mvsk')
+            fit_stats = uniform.fit(expon_rvs)
+            stats = stats + fit_stats
+
+            calc_user_option = getattr(exponential, input.prop().replace(' ', '').lower())(expon_rvs)
+
+            if input.enbl_extra():
+                calc_extra_option = getattr(exponential, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((expon_rvs, pdf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((expon_rvs, pdf, cdf, calc_user_option))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.enbl_extra():
+                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
+            else:
+                new_df.columns = [*cont_dist['standard'], input.prop()]
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in
+                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
 
         if input.distributions() == 'Geometric':
-            # TODO Geometric feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pmf;
-            * cdf;
-            * stats -> only in side-bar
-
-            Data to show by user choice:
-            * logpmf;
-            * logcdf;
-            * sf;
-            * logsf;
-
-            Possibility of implementation:
-            * ppf;
-            * isf;
-            * interval
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            """
             prob = input.prob()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'prob': prob, 'obs': obs, 'min': input.min,
-                                                      'max': input.max},
-                                                     input.matrix)
+            geometric = geom(prob)
+            geometric_rvs = geometric.rvs(size=obs)
 
-            dist_array.set(distribution_df)
+            pmf = geometric.pmf(geometric_rvs)
+            cdf = geometric.cdf(geometric_rvs)
+            stats = geometric.stats(moments='mvsk')
+
+            calc_user_option = getattr(geometric, input.prop().replace(' ', '').lower())(geometric_rvs)
+
+            if input.enbl_extra():
+                calc_extra_option = getattr(geometric, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((geometric_rvs, pmf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((geometric_rvs, pmf, cdf, calc_user_option))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.enbl_extra():
+                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
+            else:
+                new_df.columns = [*discrete_dist['standard'], input.prop()]
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
 
         if input.distributions() == 'Binomial':
-            # TODO Binomial feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pmf; Done
-            * cdf; Done
-            * stats -> only in side-bar Done
-
-            Data to show by user choice:
-            * logpmf; Done
-            * logcdf; Done
-            * sf; Done
-            * logsf; Done
-
-            Possibility of implementation:
-            * ppf; Done
-            * isf; Done
-            * interval;
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            """
 
             prob = input.prob()
             trials = input.trials()
@@ -322,48 +316,48 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             new_df = pandas.DataFrame(dist_array.T)
 
             if input.enbl_extra():
-                new_df.columns = ['Observations', 'CDF', 'PMF', input.prop(), input.extra_prop()]
+                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
             else:
-                new_df.columns = ['Observations', 'CDF', 'PMF', input.prop()]
+                new_df.columns = [*discrete_dist['standard'], input.prop()]
 
             dist_data['distribution_array'] = dist_array
             dist_data['distribution_df'] = new_df
             dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
 
         if input.distributions() == 'Uniform':
-            # TODO Exponential feature list
-            """
-            Pre-rendered data: the table will be automatically rendered with this data:
-            * pdf;
-            * cdf;
-            * stats -> only in side-bar
 
-            Data to show by user choice:
-            * logpdf;
-            * logcdf;
-            * sf;
-            * logsf;
-
-            Possibility of implementation:
-            * ppf;
-            * isf;
-            * interval;
-            * moment;
-            * entropy;
-
-            More complex functionality to implement:
-            * expect
-            * fit
-            """
             low = input.low()
             high = input.high()
 
-            distribution_df = create_distribution_df(input.distributions().lower(),
-                                                     {'low': low, 'high': high, 'obs': obs, 'min': input.min,
-                                                      'max': input.max},
-                                                     input.matrix)
+            unif = uniform(loc=low, scale=high)
+            uniform_rvs = unif.rvs(size=obs)
 
-            dist_array.set(distribution_df)
+            pdf = unif.pdf(uniform_rvs)
+            cdf = unif.cdf(uniform_rvs)
+
+            stats = unif.stats(moments='mvsk')
+            fit_stats = uniform.fit(uniform_rvs)
+            stats = stats + fit_stats
+
+            calc_user_option = getattr(unif, input.prop().replace(' ', '').lower())(uniform_rvs)
+
+            if input.enbl_extra():
+                calc_extra_option = getattr(unif, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((uniform_rvs, pdf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((uniform_rvs, pdf, cdf, calc_user_option))
+
+            new_df = pandas.DataFrame(dist_array.T)
+
+            if input.enbl_extra():
+                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
+            else:
+                new_df.columns = [*cont_dist['standard'], input.prop()]
+
+            dist_data['distribution_array'] = dist_array
+            dist_data['distribution_df'] = new_df
+            dist_data['stats'] = {k: round(v, 4) for k, v in
+                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
 
         data_frame.set(dist_data)
 

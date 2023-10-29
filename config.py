@@ -23,10 +23,13 @@ class Config:
         },
         'distributions': {
             'continuous': {
+                'standard': ['Observations', 'CDF', 'PDF'],
                 'names': ['Uniform', 'Normal', 'Exponential'],
-                'methods': ['Log PDF', 'Log CDF', 'SF', 'Log SF']
+                'methods': ['Log PDF', 'Log CDF', 'SF', 'Log SF'],
+                'extra_methods': ['PPF', 'ISF']
             },
             'discrete': {
+                'standard': ['Observations', 'CDF', 'PMF'],
                 'names': ['Binomial', 'Geometric', 'Poisson'],
                 'methods': ['Log PMF', 'Log CDF', 'SF', 'Log SF'],
                 'extra_methods': ['PPF', 'ISF']
@@ -42,8 +45,8 @@ class Config:
             'scale': 5,
             'probability': 0.35,
             'trials': 10,
-            'low': -1,
-            'high': 0,
+            'low': 0,
+            'high': 1,
             'confidence': 0.1,
             'lb': 10,
             'ub': 100
