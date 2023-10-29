@@ -8,7 +8,9 @@ import os
 
 from config import Config
 
-distribution_types = Config.server_config('distribution_types')
+# distribution_types = Config.server_config('distribution_types')
+# TODO will be removed in future version
+distribution_types = None
 
 
 # TODO try to implement the distributions as generators
@@ -62,7 +64,7 @@ def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tupl
 
     return summarized_df
 
-
+# TODO might be removed in future version
 def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.reactive.Value], column: str = 'value'):
     """
     Create a distribution function given a distribution type and reactive inputs
