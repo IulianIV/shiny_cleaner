@@ -1,6 +1,7 @@
+import pandas
 from shiny import reactive, session
-import shiny.reactive
 
+import scipy
 import pandas as pd
 import numpy as np
 import re
@@ -8,10 +9,11 @@ import os
 
 from config import Config
 
-# distribution_types = Config.server_config('distribution_types')
-# TODO will be removed in future version
-distribution_types = None
+config = Config()
+dist_defaults = config.input_config('distributions')
 
+cont_dist = dist_defaults['continuous']
+discrete_dist = dist_defaults['discrete']
 
 # TODO try to implement the distributions as generators
 
@@ -64,43 +66,71 @@ def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tupl
 
     return summarized_df
 
-# TODO might be removed in future version
-def create_distribution_df(dist_type: str, dist_args: dict[str | int | shiny.reactive.Value], column: str = 'value'):
+
+def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int, user_options: tuple,
+                           conditional: reactive.Value, dist_params: [list | dict], stat_moments: str = 'mvsk'):
     """
-    Create a distribution function given a distribution type and reactive inputs
-    :param dist_type: Must be a distribution type found within `numpy.random`
-    :param dist_args: Arguments to be given. Consult `numpy.random.distribution` for more info
-    :param cond_input: Conditional input to convert the 2D DataFrame to 1D
-    :param column: name to give to columns
-    :return: a DataFrame created from a numpy random distribution array
+    Create distribution data frame and array automatically using the scipy.stats package.
+    :param dist_name: Distribution to generate
+    :param continuous_dist: Whether it is continuous or not
+    :param dist_size: Used in RV generation, the number of RVs to generate
+    :param user_options: Methods passed by the user to generate: SF, ISF etc.
+    :param conditional: Conditional argument for extra options to generate
+    :param dist_params: Distribution parameters: scale, loc, trials etc.
+    :param stat_moments: 'Mean, Variance, Skewness, Kurtosis' - mvsk
+    :return:
     """
+    # TODO make this work with any type of given moments. Only works with 'mvsk' at the moment
 
-    if dist_type not in distribution_types:
-        raise ValueError(f'Selected distribution "{dist_type}" is not a valid distribution in numpy.random .')
+    dist_data = {
+        'distribution_array': None,
+        'distribution_df': None,
+        'stats': None
+    }
+    dist = None
+    standard_cols = cont_dist['standard'] if continuous_dist else discrete_dist['standard']
 
-    # basically calls `numpy.random.dist_type` and unpacks the contents of `dist_args` as arguments
-    np_dist = getattr(np.random, dist_type)(*[val for key, val in dist_args.items() if key not in ['min', 'max']])
-    dist_df = pd.DataFrame(data=np_dist, index=range(1, len(np_dist) + 1),
-                           columns=[column])
+    if isinstance(dist_params, dict):
+        dist = getattr(scipy.stats, dist_name)(**dist_params)
+    elif isinstance(dist_params, list):
+        dist = getattr(scipy.stats, dist_name)(*dist_params)
 
-    return dist_df
+    dist_rvs = dist.rvs(size=dist_size)
 
+    if continuous_dist:
+        pdf_pmf = dist.pdf(dist_rvs)
+    else:
+        pdf_pmf = dist.pmf(dist_rvs)
 
-def two_dim_to_one_dim(data_frame: pd.DataFrame, column_name: str) -> pd.DataFrame:
-    """
-    Converts a 2D matrix of n-columns to a single 1 column 1D vector.
-    :param data_frame: DataFrame to be reduced
-    :param column_name: Column name to pass to the final DataFrame
-    :return: reduced DataFrame
-    """
-    # main functions that convert from n-columns to 1-column
-    one_dim_df = data_frame.stack().reset_index()
-    # drop all columns except last column - which holds the data
-    one_dim_df.drop(one_dim_df.columns[:-1], axis=1, inplace=True)
-    # rename last column
-    one_dim_df.columns = [column_name]
+    cdf = dist.cdf(dist_rvs)
 
-    return one_dim_df
+    stats = dist.stats(moments=stat_moments)
+
+    if continuous_dist:
+        fit_stats = getattr(scipy.stats, dist_name).fit(dist_rvs)
+        stats = stats + fit_stats
+
+    calc_user_option = getattr(dist, user_options[0]().replace(' ', '').lower())(dist_rvs)
+
+    if conditional():
+        calc_extra_option = getattr(dist, user_options[1]().replace(' ', '').lower())(cdf)
+        dist_array = np.vstack((dist_rvs, pdf_pmf, cdf, calc_user_option, calc_extra_option))
+    else:
+        dist_array = np.vstack((dist_rvs, pdf_pmf, cdf, calc_user_option))
+
+    dist_df = pandas.DataFrame(dist_array.T)
+
+    if conditional():
+        dist_df.columns = [*standard_cols, user_options[0](), user_options[1]()]
+    else:
+        dist_df.columns = [*standard_cols, user_options[0]()]
+
+    dist_data['distribution_array'] = dist_array
+    dist_data['distribution_df'] = dist_df
+    dist_data['stats'] = {k: round(v, 4) for k, v in
+                          zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
+
+    return dist_data
 
 
 # This is a hacky workaround to help Plotly plots automatically

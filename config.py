@@ -35,7 +35,6 @@ class Config:
                 'extra_methods': ['PPF', 'ISF']
             },
             'multivariate': {
-
             },
             'mean': 1,
             'sd': 1.1,

@@ -1,8 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-import pandas
-from scipy.stats import binom, uniform, geom, expon, poisson, norm
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from shinywidgets import render_widget
 
@@ -172,192 +169,58 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             sd = input.sd()
             mean = input.mean()
 
-            normal = norm(loc=mean, scale=sd)
-            norm_rvs = normal.rvs(size=obs)
+            norm_dist = create_distribution_df('norm', True, obs,
+                                               (input.prop, input.extra_prop),
+                                               input.enbl_extra, {'loc': mean, 'scale': sd})
 
-            pdf = normal.pdf(norm_rvs)
-            cdf = normal.cdf(norm_rvs)
-
-            stats = normal.stats(moments='mvsk')
-            fit_stats = uniform.fit(norm_rvs)
-            stats = stats + fit_stats
-
-            calc_user_option = getattr(normal, input.prop().replace(' ', '').lower())(norm_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(normal, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((norm_rvs, pdf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((norm_rvs, pdf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*cont_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in
-                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
+            dist_data = norm_dist
 
         if input.distributions() == 'Poisson':
             events = input.events()
 
-            poi = poisson(events)
-            poisson_rvs = poi.rvs(size=obs)
+            poisson_dist = create_distribution_df('poisson', False, obs,
+                                                  (input.prop, input.extra_prop),
+                                                  input.enbl_extra, [events])
 
-            pmf = poi.pmf(poisson_rvs)
-            cdf = poi.cdf(poisson_rvs)
-            stats = poi.stats(moments='mvsk')
-
-            calc_user_option = getattr(poi, input.prop().replace(' ', '').lower())(poisson_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(poi, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((poisson_rvs, pmf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((poisson_rvs, pmf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*discrete_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
+            dist_data = poisson_dist
 
         if input.distributions() == 'Exponential':
             scale = input.scale()
 
-            exponential = expon(scale=scale)
-            expon_rvs = exponential.rvs(size=obs)
+            expon_dist = create_distribution_df('expon', True, obs,
+                                                (input.prop, input.extra_prop),
+                                                input.enbl_extra, {'scale': scale})
 
-            pdf = exponential.pdf(expon_rvs)
-            cdf = exponential.cdf(expon_rvs)
-
-            stats = exponential.stats(moments='mvsk')
-            fit_stats = uniform.fit(expon_rvs)
-            stats = stats + fit_stats
-
-            calc_user_option = getattr(exponential, input.prop().replace(' ', '').lower())(expon_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(exponential, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((expon_rvs, pdf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((expon_rvs, pdf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*cont_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in
-                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
+            dist_data = expon_dist
 
         if input.distributions() == 'Geometric':
             prob = input.prob()
 
-            geometric = geom(prob)
-            geometric_rvs = geometric.rvs(size=obs)
+            geom_dist = create_distribution_df('geom', False, obs,
+                                               (input.prop, input.extra_prop),
+                                               input.enbl_extra, [prob])
 
-            pmf = geometric.pmf(geometric_rvs)
-            cdf = geometric.cdf(geometric_rvs)
-            stats = geometric.stats(moments='mvsk')
-
-            calc_user_option = getattr(geometric, input.prop().replace(' ', '').lower())(geometric_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(geometric, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((geometric_rvs, pmf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((geometric_rvs, pmf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*discrete_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
+            dist_data = geom_dist
 
         if input.distributions() == 'Binomial':
-
             prob = input.prob()
             trials = input.trials()
 
-            binomial = binom(trials, prob)
-            binomial_rvs = binomial.rvs(size=obs)
+            binom_dist = create_distribution_df('binom', False, obs,
+                                                (input.prop, input.extra_prop),
+                                                input.enbl_extra, [trials, prob])
 
-            pmf = binomial.pmf(binomial_rvs)
-            cdf = binomial.cdf(binomial_rvs)
-            stats = binomial.stats(moments='mvsk')
-
-            calc_user_option = getattr(binomial, input.prop().replace(' ', '').lower())(binomial_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(binomial, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*discrete_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*discrete_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in zip(['mean', 'variance', 'skewness', 'kurtosis'], stats)}
+            dist_data = binom_dist
 
         if input.distributions() == 'Uniform':
-
             low = input.low()
             high = input.high()
 
-            unif = uniform(loc=low, scale=high)
-            uniform_rvs = unif.rvs(size=obs)
+            uniform_dist = create_distribution_df('uniform', True, obs,
+                                                (input.prop, input.extra_prop),
+                                                input.enbl_extra, {'loc': low, 'scale': high})
 
-            pdf = unif.pdf(uniform_rvs)
-            cdf = unif.cdf(uniform_rvs)
-
-            stats = unif.stats(moments='mvsk')
-            fit_stats = uniform.fit(uniform_rvs)
-            stats = stats + fit_stats
-
-            calc_user_option = getattr(unif, input.prop().replace(' ', '').lower())(uniform_rvs)
-
-            if input.enbl_extra():
-                calc_extra_option = getattr(unif, input.extra_prop().replace(' ', '').lower())(cdf)
-                dist_array = np.vstack((uniform_rvs, pdf, cdf, calc_user_option, calc_extra_option))
-            else:
-                dist_array = np.vstack((uniform_rvs, pdf, cdf, calc_user_option))
-
-            new_df = pandas.DataFrame(dist_array.T)
-
-            if input.enbl_extra():
-                new_df.columns = [*cont_dist['standard'], input.prop(), input.extra_prop()]
-            else:
-                new_df.columns = [*cont_dist['standard'], input.prop()]
-
-            dist_data['distribution_array'] = dist_array
-            dist_data['distribution_df'] = new_df
-            dist_data['stats'] = {k: round(v, 4) for k, v in
-                                  zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
+            dist_data = uniform_dist
 
         data_frame.set(dist_data)
 
