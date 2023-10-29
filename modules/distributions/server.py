@@ -13,9 +13,14 @@ from utils import synchronize_size, two_dim_to_one_dim, create_distribution_df
 
 from config import Config
 
-graph_height = Config.ui_config('graph_height')
-distributions = Config.input_config('distributions')
-distributions_prop = Config.input_config('distributions_prop')
+config = Config()
+graph_height = config.ui_config('graph_height')
+dist_defaults = config.input_config('distributions')
+
+cont_dist = dist_defaults['continuous']
+discrete_dist = dist_defaults['discrete']
+dist_names = cont_dist['names'] + discrete_dist['names']
+
 
 @module.server
 def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
@@ -23,16 +28,16 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
     @render.ui
     @reactive.event(input.distributions)
     def inputs():
-        min_val = Config.input_config('distributions_min')
-        max_val = Config.input_config('distributions_max')
-        sd = Config.input_config('distributions_standard_deviation_sigma')
-        mean = Config.input_config('distributions_mean_mu')
-        events = Config.input_config('distributions_events')
-        scale = Config.input_config('distributions_scale')
-        prob = Config.input_config('distributions_probability')
-        trials = Config.input_config('distributions_trials')
-        low = Config.input_config('distributions_low')
-        high = Config.input_config('distributions_high')
+        min_val = dist_defaults['min_obs']
+        max_val = dist_defaults['max_obs']
+        sd = dist_defaults['sd']
+        mean = dist_defaults['mean']
+        events = dist_defaults['events']
+        scale = dist_defaults['scale']
+        prob = dist_defaults['probability']
+        trials = dist_defaults['trials']
+        low = dist_defaults['low']
+        high = dist_defaults['high']
 
         distribution_ui_body = None
 
@@ -62,7 +67,7 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
                    distribution_ui_body,
                    ),
-            ui.input_selectize('prop', 'Show Properties', distributions_prop['Binomial'], multiple=False),
+            ui.input_selectize('prop', 'Show Properties', discrete_dist['methods'], multiple=False),
             ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                             value=max_val / 2),
             ui.input_action_button('plot_distribution', 'Plot'),
@@ -103,7 +108,7 @@ def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
 def update_dist_prop_select(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     def update():
-        props = distributions_prop[input.distributions()]
+        props = config.get_dist_methods(input.distributions())
         ui.update_selectize('prop', choices=props, selected=None)
 
 
@@ -275,10 +280,10 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             * stats -> only in side-bar Done
 
             Data to show by user choice:
-            * logpmf;
-            * logcdf;
-            * sf;
-            * logsf;
+            * logpmf; Done
+            * logcdf; Done
+            * sf; Done
+            * logsf; Done
 
             Possibility of implementation:
             * ppf;
@@ -307,6 +312,12 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             elif input.prop() == 'Log CDF':
                 log_cdf = binom.logcdf(distribution_array, trials, prob)
                 dist_array = np.vstack((dist_array, log_cdf))
+            elif input.prop() == 'Survival Function':
+                sf = binom.sf(distribution_array, trials, prob)
+                dist_array = np.vstack((dist_array, sf))
+            elif input.prop() == 'Log SF':
+                log_sf = binom.logsf(distribution_array, trials, prob)
+                dist_array = np.vstack((dist_array, log_sf))
 
             new_df = pandas.DataFrame(dist_array.T)
 
@@ -314,6 +325,10 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
                 new_df.columns = ['Observations', 'CDF', 'PMF', 'Log PMF']
             elif input.prop() == 'Log CDF':
                 new_df.columns = ['Observations', 'CDF', 'PMF', 'Log CDF']
+            elif input.prop() == 'Survival Function':
+                new_df.columns = ['Observations', 'CDF', 'PMF', 'SF']
+            elif input.prop() == 'Log SF':
+                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log SF']
             else:
                 new_df.columns = ['Observations', 'CDF', 'PMF']
 
