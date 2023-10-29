@@ -11,7 +11,7 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
                                     update_graph_input, load_summary_data, create_graph, filter_df)
 
 from modules.distributions.ui import distribution_selection
-from modules.distributions.server import (create_dist_inputs, update_dist_prob,
+from modules.distributions.server import (create_dist_inputs, update_dist_prob, update_dist_conf, update_expect_bounds,
                                           update_dist_min_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)
 
@@ -98,7 +98,11 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     update_dist_min_max(dist_id)
 
+    update_expect_bounds(dist_id)
+
     update_dist_prob(dist_id)
+
+    update_dist_conf(dist_id)
 
     update_dist_prop_select(dist_id)
 
