@@ -9,7 +9,7 @@ from shinywidgets import render_widget
 import plotly.express as px
 import plotly.graph_objs as go
 
-from utils import synchronize_size, two_dim_to_one_dim, create_distribution_df
+from utils import synchronize_size, create_distribution_df
 
 from config import Config
 
@@ -20,7 +20,7 @@ dist_defaults = config.input_config('distributions')
 cont_dist = dist_defaults['continuous']
 discrete_dist = dist_defaults['discrete']
 dist_names = cont_dist['names'] + discrete_dist['names']
-
+safe_functions = config.server_config('safe_callable_dict')
 
 @module.server
 def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
@@ -38,6 +38,8 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
         trials = dist_defaults['trials']
         low = dist_defaults['low']
         high = dist_defaults['high']
+        lower_bound = dist_defaults['lb']
+        upper_bound = dist_defaults['ub']
 
         distribution_ui_body = None
 
@@ -67,7 +69,18 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
                    ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
                    distribution_ui_body,
                    ),
-            ui.input_selectize('prop', 'Show Properties', discrete_dist['methods'], multiple=False),
+            ui.input_selectize('prop', 'Properties', discrete_dist['methods'], multiple=False),
+            ui.row(ui.column(6, ui.input_checkbox('enbl_extra', 'Extra Properties')),
+                   ui.column(6, ui.input_checkbox('enbl_expect', 'Expected Value'))),
+            ui.panel_conditional('input.enbl_extra',
+                                 ui.input_selectize('extra_prop', 'Extra Properties', discrete_dist['extra_methods'],
+                                                    multiple=False)),
+            ui.panel_conditional('input.enbl_expect',
+                                 ui.input_text_area('expect_func', 'Function'),
+                                 ui.input_checkbox('enbl_bounds', 'Enable Bounds'),
+                                 ui.panel_conditional('input.enbl_bounds',
+                                                      ui.input_numeric('expect_lb', 'Lower Bound', value=lower_bound),
+                                                      ui.input_numeric('expect_ub', 'Upper Bound', value=upper_bound))),
             ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                             value=max_val / 2),
             ui.input_action_button('plot_distribution', 'Plot'),
@@ -105,11 +118,27 @@ def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
 
 
 @module.server
+def update_expect_bounds(input: Inputs, output: Outputs, session: Session):
+    @reactive.Effect
+    @reactive.event(input.expect_lb, input.expect_ub)
+    def update():
+        c_lb_val = input.expect_lb()
+        c_ub_val = input.expect_ub()
+
+        if c_lb_val > c_ub_val:
+            ui.update_numeric('expect_lb', value=c_ub_val)
+            ui.update_numeric('expect_ub', value=c_lb_val)
+
+
+@module.server
 def update_dist_prop_select(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     def update():
         props = config.get_dist_methods(input.distributions())
+        extra_props = config.get_dist_methods(input.distributions(), extra=True)
+
         ui.update_selectize('prop', choices=props, selected=None)
+        ui.update_selectize('extra_prop', choices=extra_props, selected=None)
 
 
 @module.server
@@ -123,6 +152,23 @@ def update_dist_prob(input: Inputs, output: Outputs, session: Session):
             ui.update_numeric('prob', value=1)
         elif prob_value <= 0:
             ui.update_numeric('prob', value=0.1)
+
+
+@module.server
+def update_dist_conf(input: Inputs, output: Outputs, session: Session):
+    @reactive.Effect
+    @reactive.event(input.confidence)
+    def update():
+        try:
+            conf_value = float(input.confidence())
+
+            if conf_value > 1:
+                ui.update_numeric('confidence', value=1)
+            elif conf_value < 0:
+                ui.update_numeric('confidence', value=0)
+
+        except ValueError as e:
+            print(e)
 
 
 @module.server
@@ -286,8 +332,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             * logsf; Done
 
             Possibility of implementation:
-            * ppf;
-            * isf;
+            * ppf; Done
+            * isf; Done
             * interval;
             * entropy;
 
@@ -298,39 +344,42 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             prob = input.prob()
             trials = input.trials()
 
-            distribution_array = binom.rvs(trials, prob, size=obs)
+            binomial = binom(trials, prob)
+            binomial_rvs = binomial.rvs(size=obs)
 
-            pmf = binom.pmf(distribution_array, trials, prob)
-            cdf = binom.cdf(distribution_array, trials, prob)
-            stats = binom.stats(trials, prob, moments='mvsk')
+            pmf = binomial.pmf(binomial_rvs)
+            cdf = binomial.cdf(binomial_rvs)
+            stats = binomial.stats(moments='mvsk')
 
-            dist_array = np.vstack((distribution_array, pmf, cdf))
+            calc_user_option = getattr(binomial, input.prop().replace(' ', '').lower())(binomial_rvs)
 
-            if input.prop() == 'Log PMF':
-                log_pmf = binom.logpmf(distribution_array, trials, prob)
-                dist_array = np.vstack((dist_array, log_pmf))
-            elif input.prop() == 'Log CDF':
-                log_cdf = binom.logcdf(distribution_array, trials, prob)
-                dist_array = np.vstack((dist_array, log_cdf))
-            elif input.prop() == 'Survival Function':
-                sf = binom.sf(distribution_array, trials, prob)
-                dist_array = np.vstack((dist_array, sf))
-            elif input.prop() == 'Log SF':
-                log_sf = binom.logsf(distribution_array, trials, prob)
-                dist_array = np.vstack((dist_array, log_sf))
+            if input.enbl_extra():
+                calc_extra_option = getattr(binomial, input.extra_prop().replace(' ', '').lower())(cdf)
+                dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option, calc_extra_option))
+            else:
+                dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option))
+
+            if input.enbl_expect():
+                safe = ['acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'degrees', 'e', 'exp', 'fabs',
+                        'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 'abs',
+                        'log10', 'modf', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
+                import compiler
+                import math
+                # safe_copy = dict([(k, locals().get(k, None)) for k in safe])
+                x = 10
+                # safe_copy['x'] = x
+                # print(safe_copy)
+                print(input.expect_func())
+
+                # results = eval(input.expect_func(), {"__builtins__": None}, safe_copy)
+                # print(results(x))
 
             new_df = pandas.DataFrame(dist_array.T)
 
-            if input.prop() == 'Log PMF':
-                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log PMF']
-            elif input.prop() == 'Log CDF':
-                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log CDF']
-            elif input.prop() == 'Survival Function':
-                new_df.columns = ['Observations', 'CDF', 'PMF', 'SF']
-            elif input.prop() == 'Log SF':
-                new_df.columns = ['Observations', 'CDF', 'PMF', 'Log SF']
+            if input.enbl_extra():
+                new_df.columns = ['Observations', 'CDF', 'PMF', input.prop(), input.extra_prop()]
             else:
-                new_df.columns = ['Observations', 'CDF', 'PMF']
+                new_df.columns = ['Observations', 'CDF', 'PMF', input.prop()]
 
             dist_data['distribution_array'] = dist_array
             dist_data['distribution_df'] = new_df

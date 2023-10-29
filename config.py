@@ -1,5 +1,4 @@
-from numpy import random
-
+import math
 
 class Config:
     __configs = ['ui', 'input']
@@ -7,6 +6,11 @@ class Config:
     __ui_setters = ['width', 'height']
     __input_setters = ['summary_operations', 'summary_fallback', 'distributions_mean_sigma',
                        'distributions_standard_deviation', 'distributions_min', 'distributions_max']
+
+    __safe_namespace = ['math', 'acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'degrees', 'e', 'exp', 'fabs',
+                        'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 'abs',
+                        'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
+
     __server_setter = []
 
     __ui_config = {
@@ -15,7 +19,9 @@ class Config:
         'graph_height': 550,
         'graph_height_percent': '100%'
     }
-    __server_config = {}
+    __server_config = {
+        'safe_callable_dict': dict([(k, locals().get(k, None)) for k in __safe_namespace])
+   }
     __input_config = {
         'summary': {
             'operations': ['min', 'max', 'mean'],
@@ -24,11 +30,12 @@ class Config:
         'distributions': {
             'continuous': {
                 'names': ['Uniform', 'Normal', 'Exponential'],
-                'methods': ['Log PDF', 'Log CDF', 'Survival Function', 'Log SF']
+                'methods': ['Log PDF', 'Log CDF', 'SF', 'Log SF']
             },
             'discrete': {
                 'names': ['Binomial', 'Geometric', 'Poisson'],
-                'methods': ['Log PMF', 'Log CDF', 'Survival Function', 'Log SF']
+                'methods': ['Log PMF', 'Log CDF', 'SF', 'Log SF'],
+                'extra_methods': ['PPF', 'ISF']
             },
             'multivariate': {
 
@@ -42,20 +49,29 @@ class Config:
             'probability': 0.35,
             'trials': 10,
             'low': -1,
-            'high': 0
+            'high': 0,
+            'confidence': 0.1,
+            'lb': 10,
+            'ub': 100
         }
     }
 
-    def get_dist_methods(self, distribution: str):
+    def get_dist_methods(self, distribution: str, extra: bool = False):
         continuous = self.__input_config['distributions']['continuous']
         discrete = self.__input_config['distributions']['discrete']
         multivariate = self.__input_config['distributions']['multivariate']
 
         if distribution in continuous['names']:
+            if extra:
+                return continuous['extra_methods']
             return continuous['methods']
         elif distribution in discrete['names']:
+            if extra:
+                return discrete['extra_methods']
             return discrete['methods']
         elif distribution in multivariate['names']:
+            if extra:
+                return multivariate['extra_methods']
             return multivariate['methods']
 
     @staticmethod
