@@ -7,10 +7,6 @@ class Config:
     __input_setters = ['summary_operations', 'summary_fallback', 'distributions_mean_sigma',
                        'distributions_standard_deviation', 'distributions_min', 'distributions_max']
 
-    __safe_namespace = ['math', 'acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'degrees', 'e', 'exp', 'fabs',
-                        'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 'abs',
-                        'log10', 'modf', 'pi', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
-
     __server_setter = []
 
     __ui_config = {
@@ -19,9 +15,7 @@ class Config:
         'graph_height': 550,
         'graph_height_percent': '100%'
     }
-    __server_config = {
-        'safe_callable_dict': dict([(k, locals().get(k, None)) for k in __safe_namespace])
-   }
+    __server_config = {}
     __input_config = {
         'summary': {
             'operations': ['min', 'max', 'mean'],

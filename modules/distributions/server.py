@@ -20,7 +20,6 @@ dist_defaults = config.input_config('distributions')
 cont_dist = dist_defaults['continuous']
 discrete_dist = dist_defaults['discrete']
 dist_names = cont_dist['names'] + discrete_dist['names']
-safe_functions = config.server_config('safe_callable_dict')
 
 @module.server
 def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
@@ -38,8 +37,6 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
         trials = dist_defaults['trials']
         low = dist_defaults['low']
         high = dist_defaults['high']
-        lower_bound = dist_defaults['lb']
-        upper_bound = dist_defaults['ub']
 
         distribution_ui_body = None
 
@@ -70,17 +67,10 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
                    distribution_ui_body,
                    ),
             ui.input_selectize('prop', 'Properties', discrete_dist['methods'], multiple=False),
-            ui.row(ui.column(6, ui.input_checkbox('enbl_extra', 'Extra Properties')),
-                   ui.column(6, ui.input_checkbox('enbl_expect', 'Expected Value'))),
+            ui.row(ui.column(6, ui.input_checkbox('enbl_extra', 'Extra Properties'))),
             ui.panel_conditional('input.enbl_extra',
                                  ui.input_selectize('extra_prop', 'Extra Properties', discrete_dist['extra_methods'],
                                                     multiple=False)),
-            ui.panel_conditional('input.enbl_expect',
-                                 ui.input_text_area('expect_func', 'Function'),
-                                 ui.input_checkbox('enbl_bounds', 'Enable Bounds'),
-                                 ui.panel_conditional('input.enbl_bounds',
-                                                      ui.input_numeric('expect_lb', 'Lower Bound', value=lower_bound),
-                                                      ui.input_numeric('expect_ub', 'Upper Bound', value=upper_bound))),
             ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                             value=max_val / 2),
             ui.input_action_button('plot_distribution', 'Plot'),
@@ -118,19 +108,6 @@ def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
 
 
 @module.server
-def update_expect_bounds(input: Inputs, output: Outputs, session: Session):
-    @reactive.Effect
-    @reactive.event(input.expect_lb, input.expect_ub)
-    def update():
-        c_lb_val = input.expect_lb()
-        c_ub_val = input.expect_ub()
-
-        if c_lb_val > c_ub_val:
-            ui.update_numeric('expect_lb', value=c_ub_val)
-            ui.update_numeric('expect_ub', value=c_lb_val)
-
-
-@module.server
 def update_dist_prop_select(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     def update():
@@ -152,23 +129,6 @@ def update_dist_prob(input: Inputs, output: Outputs, session: Session):
             ui.update_numeric('prob', value=1)
         elif prob_value <= 0:
             ui.update_numeric('prob', value=0.1)
-
-
-@module.server
-def update_dist_conf(input: Inputs, output: Outputs, session: Session):
-    @reactive.Effect
-    @reactive.event(input.confidence)
-    def update():
-        try:
-            conf_value = float(input.confidence())
-
-            if conf_value > 1:
-                ui.update_numeric('confidence', value=1)
-            elif conf_value < 0:
-                ui.update_numeric('confidence', value=0)
-
-        except ValueError as e:
-            print(e)
 
 
 @module.server
@@ -358,21 +318,6 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
                 dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option, calc_extra_option))
             else:
                 dist_array = np.vstack((binomial_rvs, pmf, cdf, calc_user_option))
-
-            if input.enbl_expect():
-                safe = ['acos', 'asin', 'atan', 'atan2', 'ceil', 'cos', 'cosh', 'degrees', 'e', 'exp', 'fabs',
-                        'floor', 'fmod', 'frexp', 'hypot', 'ldexp', 'log', 'abs',
-                        'log10', 'modf', 'pow', 'radians', 'sin', 'sinh', 'sqrt', 'tan', 'tanh']
-                import compiler
-                import math
-                # safe_copy = dict([(k, locals().get(k, None)) for k in safe])
-                x = 10
-                # safe_copy['x'] = x
-                # print(safe_copy)
-                print(input.expect_func())
-
-                # results = eval(input.expect_func(), {"__builtins__": None}, safe_copy)
-                # print(results(x))
 
             new_df = pandas.DataFrame(dist_array.T)
 
