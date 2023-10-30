@@ -15,6 +15,7 @@ dist_defaults = config.input_config('distributions')
 cont_dist = dist_defaults['continuous']
 discrete_dist = dist_defaults['discrete']
 
+
 # TODO try to implement the distributions as generators
 
 def get_data_files(data_path: str = None) -> list[tuple[str, str]]:
@@ -105,6 +106,8 @@ def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int
     cdf = dist.cdf(dist_rvs)
 
     stats = dist.stats(moments=stat_moments)
+    entropy = (dist.entropy(),)
+    stats = stats + entropy
 
     if continuous_dist:
         fit_stats = getattr(scipy.stats, dist_name).fit(dist_rvs)
@@ -128,7 +131,7 @@ def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int
     dist_data['distribution_array'] = dist_array
     dist_data['distribution_df'] = dist_df
     dist_data['stats'] = {k: round(v, 4) for k, v in
-                          zip(['mean', 'variance', 'skewness', 'kurtosis', 'loc', 'scale'], stats)}
+                          zip(['mean', 'variance', 'skewness', 'kurtosis', 'entropy', 'loc', 'scale'], stats)}
 
     return dist_data
 
