@@ -1,8 +1,8 @@
 from shiny import module, ui
 from config import Config
 
-operations = Config.input_config('summary_operations')
-fallback = Config.input_config('summary_fallback')
+operations = Config.input_config('summary')['operations']
+fallback = Config.input_config('summary')['fallback']
 
 @module.ui
 def summary_inputs():
