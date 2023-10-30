@@ -11,7 +11,7 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
                                     update_graph_input, load_summary_data, create_graph, filter_df)
 
 from modules.distributions.ui import distribution_selection
-from modules.distributions.server import (create_dist_inputs, update_dist_prob,
+from modules.distributions.server import (create_dist_settings, update_dist_prob, update_plot_prop,
                                           update_dist_min_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)
 
@@ -32,15 +32,15 @@ app_ui = x.ui.page_fillable(
             x.ui.layout_sidebar(
                 x.ui.sidebar(
                     {'class': 'p-3'},
-                    summary_inputs('summary'),
+                    summary_inputs(summary_id),
                     width=app_width
                 ),
                 x.ui.layout_column_wrap(
                     1,
-                    show_table('summary'),
+                    show_table(summary_id),
                     x.ui.layout_column_wrap(
                         1,
-                        show_graph('summary')
+                        show_graph(summary_id)
                     ),
                 ),
                 height=app_height
@@ -51,15 +51,15 @@ app_ui = x.ui.page_fillable(
             x.ui.layout_sidebar(
                 x.ui.sidebar(
                     {'class': 'p-3'},
-                    distribution_selection('distributions'),
+                    distribution_selection(dist_id),
                     ui.output_ui('distribution_inputs'),
                     ui.output_ui('distribution_details'),
                     width=app_width
                 ),
                 x.ui.layout_column_wrap(
                     1,
-                    show_table('distributions'),
-                    show_graph('distributions')
+                    show_table(dist_id),
+                    show_graph(dist_id),
                 ),
                 height=app_height
             )
@@ -89,12 +89,14 @@ def server(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     def distribution_inputs():
-        create_dist_inputs(dist_id)
+        create_dist_settings(dist_id)
 
     @output
     @render.ui
     def distribution_details():
         create_dist_details(dist_id, dist_data()['stats'])
+
+    create_dist_df(dist_id, dist_data)
 
     update_dist_min_max(dist_id)
 
@@ -102,9 +104,8 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     update_dist_prop_select(dist_id)
 
-    create_dist_df(dist_id, dist_data)
+    update_plot_prop(dist_id)
 
-    # dist_graph(dist_id, dist_data)
-
+    dist_graph(dist_id, dist_data)
 
 app = App(app_ui, server, debug=False)
