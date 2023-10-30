@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
+
 from shinywidgets import render_widget
 
-import plotly.express as px
 import plotly.graph_objs as go
+from plotly.subplots import make_subplots
 
 from utils import synchronize_size, create_distribution_df
+from .ui import label_with_tooltip
 
 from config import Config
 
@@ -20,7 +22,7 @@ dist_names = cont_dist['names'] + discrete_dist['names']
 
 
 @module.server
-def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
+def create_dist_settings(input: Inputs, output: Outputs, session: Session):
     @output
     @render.ui
     @reactive.event(input.distributions)
@@ -36,42 +38,59 @@ def create_dist_inputs(input: Inputs, output: Outputs, session: Session):
         low = dist_defaults['low']
         high = dist_defaults['high']
 
-        distribution_ui_body = None
+        dist_inputs = None
 
         if input.distributions() == 'Normal':
-            distribution_ui_body = (ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
-                                    ui.column(3, ui.input_numeric('sd', 'σ', value=sd)))
+            dist_inputs = (ui.column(3, ui.input_numeric('mean', 'μ', value=mean)),
+                           ui.column(3, ui.input_numeric('sd', 'σ', value=sd)))
 
         elif input.distributions() == 'Poisson':
-            distribution_ui_body = ui.column(4, ui.input_numeric('events', 'Events', value=events))
+            dist_inputs = ui.column(4, ui.input_numeric('events', 'Events', value=events))
 
         elif input.distributions() == 'Exponential':
-            distribution_ui_body = ui.column(4, ui.input_numeric('scale', 'Scale', value=scale))
+            dist_inputs = ui.column(4, ui.input_numeric('scale', 'Scale', value=scale))
 
         elif input.distributions() == 'Geometric':
-            distribution_ui_body = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob))
+            dist_inputs = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob))
 
         elif input.distributions() == 'Binomial':
-            distribution_ui_body = (ui.column(3, ui.input_numeric('trials', 'Trials', value=trials)),
-                                    ui.column(3, ui.input_numeric('prob', 'Probability', value=prob)))
+            dist_inputs = (ui.column(3, ui.input_numeric('trials', 'Trials', value=trials)),
+                           ui.column(3, ui.input_numeric('prob', 'Probability', value=prob)))
 
         elif input.distributions() == 'Uniform':
-            distribution_ui_body = (ui.column(3, ui.input_numeric('low', 'Low', value=low)),
-                                    ui.column(3, ui.input_numeric('high', 'High', value=high)))
+            dist_inputs = (ui.column(3, ui.input_numeric('low', 'Low', value=low)),
+                           ui.column(3, ui.input_numeric('high', 'High', value=high)))
+
+        dist_head = (ui.column(2, ui.input_numeric('seed', 'Seed', value=0)),
+                     ui.column(3, ui.input_numeric('max', 'Max Obs.', value=max_val)))
+
+        properties_tooltip_text = 'Extra properties to Table & Plot'
+
+        dist_options = (ui.input_selectize('prop',
+                                           label_with_tooltip('Properties ', True, properties_tooltip_text, 'right',
+                                                              'card_tooltip'),
+                                           discrete_dist['methods'], multiple=False),
+                        ui.row(ui.column(6, ui.input_checkbox('enbl_extra', 'Extra Properties'))),
+                        ui.panel_conditional('input.enbl_extra',
+                                             ui.input_selectize('extra_prop', 'Extra Properties',
+                                                                discrete_dist['extra_methods'],
+                                                                multiple=False)),
+                        ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
+                                        value=max_val / 2))
+
+        dist_plot = (ui.row(ui.column(5, ui.input_action_button('plot_distribution', 'Plot Histogram')),
+                            ui.column(7, ui.input_checkbox('enbl_plot', 'Other Plots'))),
+                     ui.panel_conditional('input.enbl_plot', ui.input_checkbox_group(
+                         "plot_props",
+                         "Other plots:", [],
+                     ), ui.input_action_button('plot_other', 'Plot Other')))
 
         return (
-            ui.row(ui.column(3, ui.input_numeric('min', 'Min', value=min_val)),
-                   ui.column(3, ui.input_numeric('max', 'Max', value=max_val)),
-                   distribution_ui_body,
+            ui.row(dist_head,
+                   dist_inputs,
                    ),
-            ui.input_selectize('prop', 'Properties', discrete_dist['methods'], multiple=False),
-            ui.row(ui.column(6, ui.input_checkbox('enbl_extra', 'Extra Properties'))),
-            ui.panel_conditional('input.enbl_extra',
-                                 ui.input_selectize('extra_prop', 'Extra Properties', discrete_dist['extra_methods'],
-                                                    multiple=False)),
-            ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
-                            value=max_val / 2),
-            ui.input_action_button('plot_distribution', 'Plot'),
+            dist_options,
+            dist_plot
         )
 
 
@@ -91,18 +110,12 @@ def create_dist_details(input: Inputs, output: Outputs, session: Session, data_f
 @module.server
 def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
-    @reactive.event(input.min, input.max)
+    @reactive.event(input.max)
     def update():
         current_value = input.observations()
-        c_min_val = input.min()
         c_max_val = input.max()
 
-        if c_min_val > c_max_val:
-            ui.update_numeric('min', value=c_max_val)
-            ui.update_numeric('max', value=c_min_val)
-            ui.update_slider('observations', min=c_max_val, max=c_min_val, value=current_value)
-
-        ui.update_slider('observations', min=c_min_val, max=c_max_val, value=current_value)
+        ui.update_slider('observations', max=c_max_val, value=current_value)
 
 
 @module.server
@@ -130,6 +143,22 @@ def update_dist_prob(input: Inputs, output: Outputs, session: Session):
 
 
 @module.server
+def update_plot_prop(input: Inputs, output: Outputs, session: Session):
+    @reactive.Effect
+    @reactive.event(input.distributions, input.prop, input.extra_prop)
+    def update():
+        choices = []
+        if input.distributions() in cont_dist['names']:
+            [choices.append(_) for _ in cont_dist['standard'][1:]]
+        else:
+            [choices.append(_) for _ in discrete_dist['standard'][1:]]
+
+        choices.append(input.prop())
+
+        ui.update_checkbox_group('plot_props', choices=choices)
+
+
+@module.server
 def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
     @output
     @render.data_frame
@@ -138,19 +167,17 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
         obs = input.observations()
         dist_data = dict()
 
-        # TODO Features of the distribution to implement, tabular and graphical, will be shown in each
-        #   distributions if-conditional
-        #   The graphical representation should be made by drop-down choice, where possible.
-        #   Add a Comprehensive view of Distribution Details in the side-bar
         # TODO Discrete, Continuous feature list
         # TODO Research about the usage of loc, scale arguments in the distribution methods.
         #   In some cases it seems to be the only way to actually increase the range of generated
         #   distribution
+        # TODO there is a small glitch, that does not actually impair functionality.
+        #   when switching distribution, because the UI loads after, it still grabs the previous dists options
+        #   and tries to generate the dist with those, giving an error that fies itself after updating the input
         """
         ==== Discrete ====
         To add functionalities:
         * interval;
-        * entropy;
 
         More complex functionality to implement:
         * expect
@@ -159,7 +186,6 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
         To add functionalities:
         * interval;
         * moment;
-        * entropy;
 
         More complex functionality to implement:
         * expect
@@ -217,8 +243,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             high = input.high()
 
             uniform_dist = create_distribution_df('uniform', True, obs,
-                                                (input.prop, input.extra_prop),
-                                                input.enbl_extra, {'loc': low, 'scale': high})
+                                                  (input.prop, input.extra_prop),
+                                                  input.enbl_extra, {'loc': low, 'scale': high})
 
             dist_data = uniform_dist
 
@@ -238,33 +264,37 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
     @output
     @render_widget
-    @reactive.event(input.plot_distribution)
+    @reactive.event(input.plot_distribution, input.plot_other)
     def graph():
-        plot_data = data_frame()
+        plot_data = data_frame()['distribution_df']
+        subplot_titles = [f'Histogram of {input.distributions()} distribution']
+        to_plots = input.plot_props()
         widget = None
 
-        # Create the plot
-        hist = px.histogram(
-            plot_data,
-            x='value',
-            title=f'Histogram of {input.distributions()} distribution', height=graph_height)
+        for plot in input.plot_props():
+            subplot_titles.append(f'{input.distributions()} {plot} plot')
 
-        # TODO Add Kernel Density Estimation KDE or some sort of Probability Density Function
-        #   like the one from: https://numpy.org/doc/stable/reference/random/generated/numpy.random.normal.html
-        """
-        from scipy.stats import gaussian_kde
-        import numpy as np
-        array_plot_data = plot_data[plot_data.columns[0]].to_numpy()
-        kde = gaussian_kde(array_plot_data)
+        fig = make_subplots(rows=1, cols=1 + len(to_plots), subplot_titles=subplot_titles)
 
-        estimate1 = numpy.array([1 / (array_plot_data.std() * np.sqrt(2 * np.pi)) * np.exp(- (x -
-        array_plot_data.mean()) ** 2 / (2 * array_plot_data.std() ** 2)) for x in array_plot_data]) print(
-        plot_data) print(kde(array_plot_data)) kde_trace = go.Scatter(x=plot_data, y=kde(array_plot_data),
-        mode='lines', name='markers')
-        hist.add_trace(kde_trace)
-        """
+        fig.layout.title = f'{input.distributions()} Distribution plots'
+        fig.layout.width, fig.layout.height = 1500, 600
 
-        widget = go.FigureWidget(hist)
+        hist_trace = go.Histogram(x=plot_data['Observations'], name='Observations')
+
+        fig.add_trace(hist_trace, 1, 1)
+
+        fig.update_xaxes(title_text="Observations", row=1, col=1)
+        fig.update_yaxes(title_text='Count', row=1, col=1)
+
+        for c in range(1, len(to_plots) + 1):
+            scatter = go.Scatter(x=plot_data['Observations'], y=plot_data[to_plots[c - 1]],
+                                 mode='markers', name=to_plots[c - 1])
+
+            fig.add_trace(scatter, row=1, col=1 + c)
+            fig.update_xaxes(title_text="Observations", row=1, col=1 + c)
+            fig.update_yaxes(title_text=to_plots[c - 1], row=1, col=1 + c)
+
+        widget = go.FigureWidget(fig)
 
         @synchronize_size("graph")
         def on_size_changed(width, height):
