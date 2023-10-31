@@ -39,6 +39,7 @@ app_ui = x.ui.page_fillable(
             'Distributions',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
+                    {'class': 'p-3'},
                     distribution_selection(dist_id),
                     ui.output_ui('print_dist_eq'),
                     ui.output_ui('distribution_inputs'),
@@ -49,6 +50,25 @@ app_ui = x.ui.page_fillable(
                     1,
                     show_table(dist_id),
                     show_graph(dist_id),
+                ),
+                height=app_height
+            )
+        ),
+        ui.nav(
+            'Student t-test',
+            x.ui.layout_sidebar(
+                x.ui.sidebar(
+                    {'class': 'p-3'},
+                    # summary_inputs(summary_id),
+                    width=app_width
+                ),
+                x.ui.layout_column_wrap(
+                    1,
+                    # show_table(summary_id),
+                    x.ui.layout_column_wrap(
+                        1,
+                        # show_graph(summary_id)
+                    ),
                 ),
                 height=app_height
             )
