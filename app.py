@@ -15,8 +15,6 @@ from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           update_dist_min_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
 
-# from modules.test_statistics.server import create_statistic_settings
-from modules.test_statistics.ui import test_statistic_inputs, create_statistic_settings
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -59,26 +57,6 @@ app_ui = x.ui.page_fillable(
             )
         ),
         ui.nav(
-            'Statistical Testing',
-            x.ui.layout_sidebar(
-                x.ui.sidebar(
-                    {'class': 'p-3'},
-                    test_statistic_inputs(statistics_id),
-                    ui.output_ui('statistic_test_inputs'),
-                    width=app_width
-                ),
-                x.ui.layout_column_wrap(
-                    1,
-                    # show_table(summary_id),
-                    x.ui.layout_column_wrap(
-                        1,
-                        # show_graph(summary_id)
-                    ),
-                ),
-                height=app_height
-            )
-        ),
-        ui.nav(
             'Data Summarizer',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
@@ -106,13 +84,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     grouper = reactive.Value()
     summary_df = reactive.Value()
     dist_data = reactive.Value()
-
-    # Statistics Section ####
-
-    @output
-    @render.ui
-    def statistic_test_inputs():
-        create_statistic_settings(statistics_id)
 
     # Distributions Section ####
     @output
