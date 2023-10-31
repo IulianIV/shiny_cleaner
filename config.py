@@ -34,7 +34,7 @@ class Config:
         'distributions': {
             'continuous': {
                 'standard': ['Observations', 'PDF', 'CDF'],
-                'names': ['Uniform', 'Normal', 'Exponential'],
+                'names': ['Uniform', 'Normal', 'Exponential', 'Cauchy'],
                 'methods': ['Log PDF', 'Log CDF', 'SF', 'Log SF'],
                 'extra_methods': ['PPF', 'ISF']
             },
