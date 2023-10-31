@@ -13,7 +13,7 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
 from modules.distributions.ui import distribution_selection
 from modules.distributions.server import (create_dist_settings, update_dist_prob, update_plot_prop,
                                           update_dist_min_max, create_dist_df, update_dist_prop_select,
-                                          create_dist_details, dist_graph)
+                                          create_dist_details, dist_graph)  # dist_eq
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -26,7 +26,33 @@ summary_id = 'summary'
 
 # column choices
 app_ui = x.ui.page_fillable(
+    # ui.head_content(
+    #     ui.tags.script(
+    #         src="https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"
+    #     ),
+    #     ui.tags.script(
+    #         "if (window.MathJax) MathJax.Hub.Queue(['Typeset', MathJax.Hub]);"
+    #     )
+    # ),
     ui.navset_tab_card(
+        ui.nav(
+            'Distributions',
+            x.ui.layout_sidebar(
+                x.ui.sidebar(
+                    distribution_selection(dist_id),
+                    ui.output_ui('print_dist_eq'),
+                    ui.output_ui('distribution_inputs'),
+                    ui.output_ui('distribution_details'),
+                    width=app_width
+                ),
+                x.ui.layout_column_wrap(
+                    1,
+                    show_table(dist_id),
+                    show_graph(dist_id),
+                ),
+                height=app_height
+            )
+        ),
         ui.nav(
             'Data Summarizer',
             x.ui.layout_sidebar(
@@ -45,25 +71,7 @@ app_ui = x.ui.page_fillable(
                 ),
                 height=app_height
             )
-        ),
-        ui.nav(
-            'Distributions',
-            x.ui.layout_sidebar(
-                x.ui.sidebar(
-                    {'class': 'p-3'},
-                    distribution_selection(dist_id),
-                    ui.output_ui('distribution_inputs'),
-                    ui.output_ui('distribution_details'),
-                    width=app_width
-                ),
-                x.ui.layout_column_wrap(
-                    1,
-                    show_table(dist_id),
-                    show_graph(dist_id),
-                ),
-                height=app_height
-            )
-        ),
+        )
     )
 )
 
@@ -96,6 +104,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     def distribution_details():
         create_dist_details(dist_id, dist_data()['stats'])
 
+    # @output
+    # @render.ui
+    # def print_dist_eq():
+    #     dist_eq(dist_id)
+
     create_dist_df(dist_id, dist_data)
 
     update_dist_min_max(dist_id)
@@ -107,5 +120,6 @@ def server(input: Inputs, output: Outputs, session: Session):
     update_plot_prop(dist_id)
 
     dist_graph(dist_id, dist_data)
+
 
 app = App(app_ui, server, debug=False)
