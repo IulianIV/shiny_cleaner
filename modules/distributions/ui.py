@@ -14,8 +14,8 @@ qmark = config.ui_config('tooltip_q')
 def distribution_selection():
     return (
         ui.input_radio_buttons('distributions', f'Distributions', sorted(cont_dist + discrete_dist)),
+        # ui.output_ui('eq'),
         ui.hr(),
-        ui.p('Distribution settings'),
         ui.output_ui('inputs'),
         ui.hr(),
         ui.output_text_verbatim('details')

@@ -69,9 +69,11 @@ def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tupl
 
 
 def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int, user_options: tuple,
-                           conditional: reactive.Value, dist_params: [list | dict], stat_moments: str = 'mvsk'):
+                           conditional: reactive.Value,dist_params: [list | dict],
+                           stat_moments: str = 'mvsk', random_state: int = None):
     """
     Create distribution data frame and array automatically using the scipy.stats package.
+    :param random_state: Random seed value used in random distribution value creation
     :param dist_name: Distribution to generate
     :param continuous_dist: Whether it is continuous or not
     :param dist_size: Used in RV generation, the number of RVs to generate
@@ -96,7 +98,7 @@ def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int
     elif isinstance(dist_params, list):
         dist = getattr(scipy.stats, dist_name)(*dist_params)
 
-    dist_rvs = dist.rvs(size=dist_size)
+    dist_rvs = dist.rvs(size=dist_size, random_state=random_state)
 
     if continuous_dist:
         pdf_pmf = dist.pdf(dist_rvs)

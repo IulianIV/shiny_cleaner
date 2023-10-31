@@ -38,6 +38,9 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
         low = dist_defaults['low']
         high = dist_defaults['high']
 
+        properties_tooltip_text = 'Extra properties to Table & Plot'
+        seed_tooltip = 'By setting a seed the data set can be frozen'
+
         dist_inputs = None
 
         if input.distributions() == 'Normal':
@@ -61,10 +64,9 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
             dist_inputs = (ui.column(3, ui.input_numeric('low', 'Low', value=low)),
                            ui.column(3, ui.input_numeric('high', 'High', value=high)))
 
-        dist_head = (ui.column(2, ui.input_numeric('seed', 'Seed', value=0)),
+        dist_head = (ui.column(3, ui.input_numeric('seed', label_with_tooltip('Seed ', True, seed_tooltip, 'right',
+                                                                              'seed_tooltip'), value=0)),
                      ui.column(3, ui.input_numeric('max', 'Max Obs.', value=max_val)))
-
-        properties_tooltip_text = 'Extra properties to Table & Plot'
 
         dist_options = (ui.input_selectize('prop',
                                            label_with_tooltip('Properties ', True, properties_tooltip_text, 'right',
@@ -92,6 +94,34 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
             dist_options,
             dist_plot
         )
+
+# TODO fix this MathJax. It works only once. On change of distribution the TypeSet is no
+#   longer evaluated
+# @module.server
+# def dist_eq(input: Inputs, output: Outputs, session: Session):
+#     @output
+#     @render.ui
+#     @reactive.event(input.distributions)
+#     def eq():
+#         equation = ''
+#
+#         if input.distributions() == 'Binomial':
+#             equation = '''
+#             $$\\text{Binomial Distribution Formula}$$
+#             $$P_x = {n \choose x}p^xq^{n-x}$$
+#             $$\\text{Values}$$
+#             $$\\begin{cases}n \\to \\text{Observations}\\\\x\\to\\text{Trials}\\\\p\\to\\text{Probability}\\end{cases}$$
+#             '''
+#
+#         if input.distributions() == 'Exponential':
+#             equation = '''
+#             $$\\text{Exponential Distribution Formula}$$
+#             $$f(x) = exp(-x), \\text{ for } x \geq 0$$
+#             $$\\text{Values}$$
+#             $$\\begin{cases}n \\to \\text{Observations}\\\\x\\to\\text{Trials}\\\\p\\to\\text{Probability}\\end{cases}$$
+#             '''
+#
+#         return ui.p(equation)
 
 
 @module.server
@@ -166,6 +196,10 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
     def data():
         obs = input.observations()
         dist_data = dict()
+        random_state = None
+
+        if input.seed() > 0:
+            random_state = input.seed()
 
         # TODO Discrete, Continuous feature list
         # TODO Research about the usage of loc, scale arguments in the distribution methods.
@@ -197,7 +231,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             norm_dist = create_distribution_df('norm', True, obs,
                                                (input.prop, input.extra_prop),
-                                               input.enbl_extra, {'loc': mean, 'scale': sd})
+                                               input.enbl_extra, {'loc': mean, 'scale': sd},
+                                               random_state=random_state)
 
             dist_data = norm_dist
 
@@ -206,7 +241,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             poisson_dist = create_distribution_df('poisson', False, obs,
                                                   (input.prop, input.extra_prop),
-                                                  input.enbl_extra, [events])
+                                                  input.enbl_extra, [events],
+                                                  random_state=random_state)
 
             dist_data = poisson_dist
 
@@ -215,7 +251,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             expon_dist = create_distribution_df('expon', True, obs,
                                                 (input.prop, input.extra_prop),
-                                                input.enbl_extra, {'scale': scale})
+                                                input.enbl_extra, {'scale': scale},
+                                                random_state=random_state)
 
             dist_data = expon_dist
 
@@ -224,7 +261,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             geom_dist = create_distribution_df('geom', False, obs,
                                                (input.prop, input.extra_prop),
-                                               input.enbl_extra, [prob])
+                                               input.enbl_extra, [prob],
+                                               random_state=random_state)
 
             dist_data = geom_dist
 
@@ -234,7 +272,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             binom_dist = create_distribution_df('binom', False, obs,
                                                 (input.prop, input.extra_prop),
-                                                input.enbl_extra, [trials, prob])
+                                                input.enbl_extra, [trials, prob],
+                                                random_state=random_state)
 
             dist_data = binom_dist
 
@@ -244,7 +283,8 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             uniform_dist = create_distribution_df('uniform', True, obs,
                                                   (input.prop, input.extra_prop),
-                                                  input.enbl_extra, {'loc': low, 'scale': high})
+                                                  input.enbl_extra, {'loc': low, 'scale': high},
+                                                  random_state=random_state)
 
             dist_data = uniform_dist
 
