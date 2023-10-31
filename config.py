@@ -59,6 +59,9 @@ class Config:
             'confidence': 0.1,
             'lb': 10,
             'ub': 100
+        },
+        'statistical_testing':{
+            'tests': ['t-test', 'z-test', 'Wilcoxon', 'ANOVA']
         }
     }
 
