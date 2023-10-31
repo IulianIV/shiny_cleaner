@@ -10,10 +10,13 @@ from modules.summary.ui import summary_inputs
 from modules.summary.server import (update_filename_input, load_data_frame, update_aggregator_input,
                                     update_graph_input, load_summary_data, create_graph, filter_df)
 
-from modules.distributions.ui import distribution_selection
-from modules.distributions.server import (create_dist_settings, update_dist_prob, update_plot_prop,
+from modules.distributions.ui import distribution_selection, create_dist_settings
+from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           update_dist_min_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
+
+# from modules.test_statistics.server import create_statistic_settings
+from modules.test_statistics.ui import test_statistic_inputs, create_statistic_settings
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -23,6 +26,7 @@ app_width = Config.ui_config('width')
 app_height = Config.ui_config('height')
 dist_id = 'distributions'
 summary_id = 'summary'
+statistics_id = 'statistics'
 
 # column choices
 app_ui = x.ui.page_fillable(
@@ -41,7 +45,7 @@ app_ui = x.ui.page_fillable(
                 x.ui.sidebar(
                     {'class': 'p-3'},
                     distribution_selection(dist_id),
-                    ui.output_ui('print_dist_eq'),
+                    # ui.output_ui('print_dist_eq'),
                     ui.output_ui('distribution_inputs'),
                     ui.output_ui('distribution_details'),
                     width=app_width
@@ -55,11 +59,12 @@ app_ui = x.ui.page_fillable(
             )
         ),
         ui.nav(
-            'Student t-test',
+            'Statistical Testing',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
                     {'class': 'p-3'},
-                    # summary_inputs(summary_id),
+                    test_statistic_inputs(statistics_id),
+                    ui.output_ui('statistic_test_inputs'),
                     width=app_width
                 ),
                 x.ui.layout_column_wrap(
@@ -102,18 +107,14 @@ def server(input: Inputs, output: Outputs, session: Session):
     summary_df = reactive.Value()
     dist_data = reactive.Value()
 
-    update_filename_input(summary_id)
+    # Statistics Section ####
 
-    load_data_frame(summary_id, grouper, orig_summary_df)
+    @output
+    @render.ui
+    def statistic_test_inputs():
+        create_statistic_settings(statistics_id)
 
-    update_aggregator_input(summary_id, grouper)
-
-    update_graph_input(summary_id, grouper)
-
-    load_summary_data(summary_id, orig_summary_df, summary_df)
-
-    create_graph(summary_id, filter_df(summary_id, orig_summary_df, summary_df))
-
+    # Distributions Section ####
     @output
     @render.ui
     def distribution_inputs():
@@ -140,6 +141,20 @@ def server(input: Inputs, output: Outputs, session: Session):
     update_plot_prop(dist_id)
 
     dist_graph(dist_id, dist_data)
+
+    # Summary Section ####
+
+    update_filename_input(summary_id)
+
+    load_data_frame(summary_id, grouper, orig_summary_df)
+
+    update_aggregator_input(summary_id, grouper)
+
+    update_graph_input(summary_id, grouper)
+
+    load_summary_data(summary_id, orig_summary_df, summary_df)
+
+    create_graph(summary_id, filter_df(summary_id, orig_summary_df, summary_df))
 
 
 app = App(app_ui, server, debug=False)
