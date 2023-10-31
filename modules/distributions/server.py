@@ -54,15 +54,20 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
             dist_inputs = ui.column(4, ui.input_numeric('scale', 'Scale', value=scale))
 
         elif input.distributions() == 'Geometric':
-            dist_inputs = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob))
+            dist_inputs = ui.column(4, ui.input_numeric('prob', 'Probability', value=prob, step=0.05))
 
         elif input.distributions() == 'Binomial':
             dist_inputs = (ui.column(3, ui.input_numeric('trials', 'Trials', value=trials)),
-                           ui.column(3, ui.input_numeric('prob', 'Probability', value=prob)))
+                           ui.column(3, ui.input_numeric('prob', 'Probability', value=prob, step=0.05)))
 
         elif input.distributions() == 'Uniform':
             dist_inputs = (ui.column(3, ui.input_numeric('low', 'Low', value=low)),
                            ui.column(3, ui.input_numeric('high', 'High', value=high)))
+
+        # elif input.distributions() == 'Cauchy':
+        #     dist_inputs = (ui.column(3, ui.input_numeric('scale', 'Scale', value=scale)),
+        #                    ui.column(3, ui.input_numeric('location', 'Location', value=0))
+        #                    )
 
         dist_head = (ui.column(3, ui.input_numeric('seed', label_with_tooltip('Seed ', True, seed_tooltip, 'right',
                                                                               'seed_tooltip'), value=0)),
@@ -94,6 +99,7 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
             dist_options,
             dist_plot
         )
+
 
 # TODO fix this MathJax. It works only once. On change of distribution the TypeSet is no
 #   longer evaluated
@@ -284,6 +290,18 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
             uniform_dist = create_distribution_df('uniform', True, obs,
                                                   (input.prop, input.extra_prop),
                                                   input.enbl_extra, {'loc': low, 'scale': high},
+                                                  random_state=random_state)
+
+            dist_data = uniform_dist
+
+        # TODO properly implement this
+        if input.distributions() == 'Cauchy':
+            # scale = input.scale()
+            # location = input.location()
+
+            uniform_dist = create_distribution_df('cauchy', True, obs,
+                                                  (input.prop, input.extra_prop),
+                                                  input.enbl_extra, {}, #'scale': scale, 'loc': location
                                                   random_state=random_state)
 
             dist_data = uniform_dist
