@@ -29,21 +29,9 @@ discrete_dist = dist_defaults['discrete']
 #     def eq():
 #         equation = ''
 #
-#         if input.distributions() == 'Binomial':
-#             equation = '''
-#             $$\\text{Binomial Distribution Formula}$$
-#             $$P_x = {n \choose x}p^xq^{n-x}$$
-#             $$\\text{Values}$$
-#             $$\\begin{cases}n \\to \\text{Observations}\\\\x\\to\\text{Trials}\\\\p\\to\\text{Probability}\\end{cases}$$
-#             '''
-#
-#         if input.distributions() == 'Exponential':
-#             equation = '''
-#             $$\\text{Exponential Distribution Formula}$$
-#             $$f(x) = exp(-x), \\text{ for } x \geq 0$$
-#             $$\\text{Values}$$
-#             $$\\begin{cases}n \\to \\text{Observations}\\\\x\\to\\text{Trials}\\\\p\\to\\text{Probability}\\end{cases}$$
-#             '''
+# if input.distributions() == 'Binomial': equation = ''' $$\\text{Binomial Distribution Formula}$$ $$P_x = {n \choose
+# x}p^xq^{n-x}$$ $$\\text{Values}$$ $$\\begin{cases}n \\to \\text{Observations}\\\\x\\to\\text{
+# Trials}\\\\p\\to\\text{Probability}\\end{cases}$$ '''
 #
 #         return ui.p(equation)
 
@@ -62,7 +50,7 @@ def create_dist_details(input: Inputs, output: Outputs, session: Session, data_f
 
 
 @module.server
-def update_dist_min_max(input: Inputs, output: Outputs, session: Session):
+def update_dist_max(input: Inputs, output: Outputs, session: Session):
     @reactive.Effect
     @reactive.event(input.max)
     def update():
@@ -136,15 +124,15 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
         ==== Discrete ====
         To add functionalities:
         * interval;
-
+    
         More complex functionality to implement:
         * expect
-        
+    
         ==== Continuous ====
         To add functionalities:
         * interval;
         * moment;
-
+    
         More complex functionality to implement:
         * expect
         """
@@ -219,7 +207,7 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
             uniform_dist = create_distribution_df('cauchy', True, obs,
                                                   (input.prop, input.extra_prop),
-                                                  input.enbl_extra, {}, #'scale': scale, 'loc': location
+                                                  input.enbl_extra, {},  # 'scale': scale, 'loc': location
                                                   random_state=random_state)
 
             dist_data = uniform_dist
