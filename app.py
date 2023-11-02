@@ -57,38 +57,48 @@ app_ui = x.ui.page_fillable(
         ),
         ui.nav(
             'Statistical Distance',
-            x.ui.layout_sidebar(
-                x.ui.sidebar(
-                    {'class': 'p-3'},
-                    ui.navset_pill(
-                        ui.nav("First Distribution",
-                               distribution_selection('dist1'),
-                               ui.output_ui('dist1_inputs'),
-                               ui.output_ui('dist1_details'),
-                               ),
-                        ui.nav("Second Distribution",
-                               distribution_selection('dist2'),
-                               ui.output_ui('dist2_inputs'),
-                               ui.output_ui('dist2_details'),
-                               ),
+            ui.navset_tab_card(
+                ui.nav('Create Distributions', x.ui.layout_sidebar(
+                    x.ui.sidebar(
+                        {'class': 'p-3'},
+                        ui.navset_pill(
+                            ui.nav("First Distribution",
+                                   distribution_selection('dist1'),
+                                   ui.output_ui('dist1_inputs'),
+                                   ui.output_ui('dist1_details'),
+                                   ),
+                            ui.nav("Second Distribution",
+                                   distribution_selection('dist2'),
+                                   ui.output_ui('dist2_inputs'),
+                                   ui.output_ui('dist2_details'),
+                                   ),
+                        ),
+                        width=app_width
                     ),
-                    width=app_width
-                ),
-                ui.navset_tab_card(
-                    ui.nav('Distribution Tables', ui.row(ui.column(6, ui.p(
-                                          {"style": "font-weight: bold"}, 'First Distribution'), show_table('dist1')),
-                                             ui.column(6, ui.p(
-                                                 {"style": "font-weight: bold"}, 'Second Distribution'), show_table('dist2')),
-                                             )),
-                    ui.nav('Kullback–Leibler', ui.h1(
-                                                {"style": "font-weight: bold"}, 'Kullback–Leibler Divergence'))
-                ),
-                # ui.input_checkbox("divergence_table", "Show tables", False),
-                # ui.panel_conditional('input.divergence_table',
-                #                      ),
-                height=app_height
-            )
-        ),
+                    x.ui.layout_column_wrap(1,
+                                            x.ui.layout_column_wrap(
+                                                1 / 2,
+                                                ui.p({"style": "font-weight: bold"}, 'First Dist. Table',
+                                                     show_table('dist1')),
+                                                ui.p({"style": "font-weight: bold"}, 'Second Dist. Table',
+                                                     show_table('dist2')),
+
+                                            ),
+                                            x.ui.layout_column_wrap(
+                                                1 / 2,
+                                                ui.p({"style": "font-weight: bold"}, 'First Dist. Graph',
+                                                     show_graph('dist1')),
+                                                ui.p({"style": "font-weight: bold"}, 'Second Dist. Graph',
+                                                     show_graph('dist2')),
+
+                                            )
+                                            ),
+                    height=app_height
+                )
+                       ),
+                ui.nav('Kullback–Leibler', ui.h1(
+                        {"style": "font-weight: bold"}, 'Kullback–Leibler Divergence'))
+            )),
         ui.nav(
             'Data Summarizer',
             x.ui.layout_sidebar(
@@ -157,13 +167,17 @@ def server(input: Inputs, output: Outputs, session: Session):
     def dist1_details():
         create_dist_details('dist1', dist1_data()['stats'])
 
+    create_dist_df('dist1', dist1_data)
+
     update_dist_max('dist1')
 
     update_dist_prob('dist1')
 
     update_dist_prop_select('dist1')
 
-    create_dist_df('dist1', dist1_data)
+    update_plot_prop('dist1')
+
+    dist_graph('dist1', dist1_data)
 
     @output
     @render.ui
@@ -175,13 +189,17 @@ def server(input: Inputs, output: Outputs, session: Session):
     def dist2_details():
         create_dist_details('dist2', dist2_data()['stats'])
 
+    create_dist_df('dist2', dist2_data)
+
     update_dist_max('dist2')
 
     update_dist_prob('dist2')
 
     update_dist_prop_select('dist2')
 
-    create_dist_df('dist2', dist2_data)
+    update_plot_prop('dist2')
+
+    dist_graph('dist2', dist2_data)
 
     # Summary Section ####
 
