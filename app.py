@@ -12,9 +12,8 @@ from modules.summary.server import (update_filename_input, load_data_frame, upda
 
 from modules.distributions.ui import distribution_selection, create_dist_settings
 from modules.distributions.server import (update_dist_prob, update_plot_prop,
-                                          update_dist_min_max, create_dist_df, update_dist_prop_select,
+                                          update_dist_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
-
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -57,6 +56,40 @@ app_ui = x.ui.page_fillable(
             )
         ),
         ui.nav(
+            'Statistical Distance',
+            x.ui.layout_sidebar(
+                x.ui.sidebar(
+                    {'class': 'p-3'},
+                    ui.navset_pill(
+                        ui.nav("First Distribution",
+                               distribution_selection('dist1'),
+                               ui.output_ui('dist1_inputs'),
+                               ui.output_ui('dist1_details'),
+                               ),
+                        ui.nav("Second Distribution",
+                               distribution_selection('dist2'),
+                               ui.output_ui('dist2_inputs'),
+                               ui.output_ui('dist2_details'),
+                               ),
+                    ),
+                    width=app_width
+                ),
+                ui.navset_tab_card(
+                    ui.nav('Distribution Tables', ui.row(ui.column(6, ui.p(
+                                          {"style": "font-weight: bold"}, 'First Distribution'), show_table('dist1')),
+                                             ui.column(6, ui.p(
+                                                 {"style": "font-weight: bold"}, 'Second Distribution'), show_table('dist2')),
+                                             )),
+                    ui.nav('Kullback–Leibler', ui.h1(
+                                                {"style": "font-weight: bold"}, 'Kullback–Leibler Divergence'))
+                ),
+                # ui.input_checkbox("divergence_table", "Show tables", False),
+                # ui.panel_conditional('input.divergence_table',
+                #                      ),
+                height=app_height
+            )
+        ),
+        ui.nav(
             'Data Summarizer',
             x.ui.layout_sidebar(
                 x.ui.sidebar(
@@ -67,12 +100,10 @@ app_ui = x.ui.page_fillable(
                 x.ui.layout_column_wrap(
                     1,
                     show_table(summary_id),
-                    x.ui.layout_column_wrap(
-                        1,
-                        show_graph(summary_id)
-                    ),
+                    show_graph(summary_id)
                 ),
                 height=app_height
+
             )
         )
     )
@@ -84,6 +115,8 @@ def server(input: Inputs, output: Outputs, session: Session):
     grouper = reactive.Value()
     summary_df = reactive.Value()
     dist_data = reactive.Value()
+    dist1_data = reactive.Value()
+    dist2_data = reactive.Value()
 
     # Distributions Section ####
     @output
@@ -103,7 +136,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     create_dist_df(dist_id, dist_data)
 
-    update_dist_min_max(dist_id)
+    update_dist_max(dist_id)
 
     update_dist_prob(dist_id)
 
@@ -112,6 +145,43 @@ def server(input: Inputs, output: Outputs, session: Session):
     update_plot_prop(dist_id)
 
     dist_graph(dist_id, dist_data)
+
+    # Statistical Divergence Section ####
+    @output
+    @render.ui
+    def dist1_inputs():
+        create_dist_settings('dist1')
+
+    @output
+    @render.ui
+    def dist1_details():
+        create_dist_details('dist1', dist1_data()['stats'])
+
+    update_dist_max('dist1')
+
+    update_dist_prob('dist1')
+
+    update_dist_prop_select('dist1')
+
+    create_dist_df('dist1', dist1_data)
+
+    @output
+    @render.ui
+    def dist2_inputs():
+        create_dist_settings('dist2')
+
+    @output
+    @render.ui
+    def dist2_details():
+        create_dist_details('dist2', dist2_data()['stats'])
+
+    update_dist_max('dist2')
+
+    update_dist_prob('dist2')
+
+    update_dist_prop_select('dist2')
+
+    create_dist_df('dist2', dist2_data)
 
     # Summary Section ####
 
