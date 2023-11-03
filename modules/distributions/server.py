@@ -225,7 +225,7 @@ def create_dist_df(input: Inputs, output: Outputs, session: Session, data_frame:
 
 
 @module.server
-def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value):
+def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: reactive.Value, size: tuple = (1500, 600)):
     @output
     @render_widget
     @reactive.event(input.plot_distribution, input.plot_other)
@@ -241,7 +241,7 @@ def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: rea
         fig = make_subplots(rows=1, cols=1 + len(to_plots), subplot_titles=subplot_titles)
 
         fig.layout.title = f'{input.distributions()} Distribution plots'
-        fig.layout.width, fig.layout.height = 1500, 600
+        fig.layout.width, fig.layout.height = size
 
         hist_trace = go.Histogram(x=plot_data['Observations'], name='Observations')
 
@@ -249,6 +249,13 @@ def dist_graph(input: Inputs, output: Outputs, session: Session, data_frame: rea
 
         fig.update_xaxes(title_text="Observations", row=1, col=1)
         fig.update_yaxes(title_text='Count', row=1, col=1)
+
+        fig.update_layout(legend=dict(
+            yanchor="top",
+            y=0.99,
+            xanchor="left",
+            x=0.01
+        ))
 
         for c in range(1, len(to_plots) + 1):
             scatter = go.Scatter(x=plot_data['Observations'], y=plot_data[to_plots[c - 1]],

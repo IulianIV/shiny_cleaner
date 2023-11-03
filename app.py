@@ -78,18 +78,14 @@ app_ui = x.ui.page_fillable(
                     x.ui.layout_column_wrap(1,
                                             x.ui.layout_column_wrap(
                                                 1 / 2,
-                                                ui.p({"style": "font-weight: bold"}, 'First Dist. Table',
-                                                     show_table('dist1')),
-                                                ui.p({"style": "font-weight: bold"}, 'Second Dist. Table',
-                                                     show_table('dist2')),
+                                                show_table('dist1'),
+                                                show_table('dist2')
 
                                             ),
                                             x.ui.layout_column_wrap(
                                                 1 / 2,
-                                                ui.p({"style": "font-weight: bold"}, 'First Dist. Graph',
-                                                     show_graph('dist1')),
-                                                ui.p({"style": "font-weight: bold"}, 'Second Dist. Graph',
-                                                     show_graph('dist2')),
+                                                show_graph('dist1'),
+                                                show_graph('dist2')
 
                                             )
                                             ),
@@ -177,7 +173,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     update_plot_prop('dist1')
 
-    dist_graph('dist1', dist1_data)
+    dist_graph('dist1', dist1_data, size=(900, 600))
 
     @output
     @render.ui
@@ -199,7 +195,7 @@ def server(input: Inputs, output: Outputs, session: Session):
 
     update_plot_prop('dist2')
 
-    dist_graph('dist2', dist2_data)
+    dist_graph('dist2', dist2_data, size=(900, 600))
 
     # Summary Section ####
 
