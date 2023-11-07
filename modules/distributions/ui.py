@@ -7,8 +7,6 @@ config = Config()
 cont_dist = config.input_config('distributions')['continuous']
 discrete_dist = config.input_config('distributions')['discrete']
 qmark = config.ui_config('tooltip_q')
-
-config = Config()
 graph_height = config.ui_config('graph_height')
 dist_defaults = config.input_config('distributions')
 
@@ -24,7 +22,6 @@ def distribution_selection():
         ui.output_ui('inputs'),
         ui.hr(),
         ui.output_text_verbatim('details'),
-        ui.hr()
     )
 
 @module.server
@@ -91,12 +88,12 @@ def create_dist_settings(input: Inputs, output: Outputs, session: Session):
                         ui.input_slider('observations', 'Observations', min=min_val, max=max_val,
                                         value=max_val / 2))
 
-        dist_plot = (ui.row(ui.column(5, ui.input_action_button('plot_distribution', 'Plot Histogram')),
+        dist_plot = (ui.row(ui.column(5, ui.input_action_button('plot_distribution', 'Plot Histogram', class_='btn-success')),
                             ui.column(7, ui.input_checkbox('enbl_plot', 'Other Plots'))),
                      ui.panel_conditional('input.enbl_plot', ui.input_checkbox_group(
                          "plot_props",
                          "Other plots:", [],
-                     ), ui.input_action_button('plot_other', 'Plot Other')))
+                     ), ui.input_action_button('plot_other', 'Plot Other', class_='btn-primary')))
 
         return (
             ui.row(dist_head,
