@@ -15,6 +15,8 @@ from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           update_dist_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
 
+from modules.divergence.ui import divergence_selection
+from modules.divergence.server import divergence_results, compute_divergences
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -58,42 +60,41 @@ app_ui = x.ui.page_fillable(
         ),
         ui.nav(
             'Statistical Distance',
-            ui.navset_tab_card(
-                ui.nav('Create Distributions', x.ui.layout_sidebar(
-                    x.ui.sidebar(
-                        {'class': 'p-3'},
-                        ui.navset_pill(
-                            ui.nav("First Distribution",
-                                   distribution_selection('dist1'),
-                                   ui.output_ui('dist1_inputs'),
-                                   ui.output_ui('dist1_details'),
-                                   ),
-                            ui.nav("Second Distribution",
-                                   distribution_selection('dist2'),
-                                   ui.output_ui('dist2_inputs'),
-                                   ui.output_ui('dist2_details'),
-                                   ),
-                        ),
-                        width=app_width
+            x.ui.layout_sidebar(
+                x.ui.sidebar(
+                    {'class': 'p-3'},
+                    ui.navset_pill(
+                        ui.nav("First Distribution",
+                               distribution_selection('dist1'),
+                               ui.output_ui('dist1_inputs'),
+                               ui.output_ui('dist1_details'),
+                               ),
+                        ui.nav("Second Distribution",
+                               distribution_selection('dist2'),
+                               ui.output_ui('dist2_inputs'),
+                               ui.output_ui('dist2_details'),
+                               ),
                     ),
-                    x.ui.layout_column_wrap(1,
-                                            x.ui.layout_column_wrap(
-                                                1 / 2,
-                                                show_table('dist1'),
-                                                show_table('dist2')
+                    ui.hr(),
+                    divergence_selection('divergence'),
+                    ui.output_ui('divergence_details'),
+                    width=app_width
+                ),
+                x.ui.layout_column_wrap(1,
+                                        x.ui.layout_column_wrap(
+                                            1 / 2,
+                                            show_table('dist1'),
+                                            show_table('dist2')
 
-                                            ),
-                                            x.ui.layout_column_wrap(
-                                                1 / 2,
-                                                show_graph('dist1'),
-                                                show_graph('dist2')
+                                        ),
+                                        x.ui.layout_column_wrap(
+                                            1 / 2,
+                                            show_graph('dist1'),
+                                            show_graph('dist2')
 
-                                            )
-                                            ),
-                    height=app_height
-                )
-                       ),
-
+                                        )
+                                        ),
+                height=app_height
             )),
         ui.nav(
             'Data Summarizer',
@@ -123,6 +124,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     dist_data = reactive.Value()
     dist1_data = reactive.Value()
     dist2_data = reactive.Value()
+    divergence_values = reactive.Value()
 
     # Distributions Section ####
     @output
@@ -197,6 +199,13 @@ def server(input: Inputs, output: Outputs, session: Session):
     update_plot_prop('dist2')
 
     dist_graph('dist2', dist2_data, size=(900, 600))
+
+    @output
+    @render.ui
+    def divergence_details():
+        divergence_results('divergence', divergence_values)
+
+    compute_divergences('divergence', (dist1_data, dist2_data), divergence_values)
 
     # Summary Section ####
 
