@@ -23,7 +23,8 @@ def distribution_selection():
         ui.hr(),
         ui.output_ui('inputs'),
         ui.hr(),
-        ui.output_text_verbatim('details')
+        ui.output_text_verbatim('details'),
+        ui.hr()
     )
 
 @module.server

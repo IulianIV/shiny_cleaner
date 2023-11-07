@@ -15,6 +15,7 @@ from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           update_dist_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
 
+
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
 #   function. This way the global namespace is less cluttered.
@@ -92,8 +93,7 @@ app_ui = x.ui.page_fillable(
                     height=app_height
                 )
                        ),
-                ui.nav('Kullback–Leibler', ui.h1(
-                        {"style": "font-weight: bold"}, 'Kullback–Leibler Divergence'))
+
             )),
         ui.nav(
             'Data Summarizer',
@@ -153,6 +153,7 @@ def server(input: Inputs, output: Outputs, session: Session):
     dist_graph(dist_id, dist_data)
 
     # Statistical Divergence Section ####
+
     @output
     @render.ui
     def dist1_inputs():

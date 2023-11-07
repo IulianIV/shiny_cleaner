@@ -1,3 +1,4 @@
+import numpy
 import pandas
 from shiny import reactive, session
 
@@ -69,8 +70,10 @@ def create_summary_df(data_frame: pd.DataFrame, group_by: str, aggregators: tupl
 
 
 def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int, user_options: tuple,
-                           conditional: reactive.Value,dist_params: [list | dict],
-                           stat_moments: str = 'mvsk', random_state: int = None):
+                           conditional: reactive.Value,
+                           dist_params: [list | dict],
+                           stat_moments: str = 'mvsk',
+                           random_state: int = None) -> dict[pandas.DataFrame | numpy.ndarray | dict[float]]:
     """
     Create distribution data frame and array automatically using the scipy.stats package.
     :param random_state: Random seed value used in random distribution value creation
