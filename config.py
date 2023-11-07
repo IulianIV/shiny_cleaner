@@ -60,8 +60,8 @@ class Config:
             'lb': 10,
             'ub': 100
         },
-        'statistical_testing':{
-            'tests': ['t-test', 'z-test', 'Wilcoxon', 'ANOVA']
+        'divergence': {
+            'names': ['Hellinger', 'Kullback–Leibler', 'Bregman']
         }
     }
 
@@ -82,6 +82,18 @@ class Config:
             if extra:
                 return multivariate['extra_methods']
             return multivariate['methods']
+
+    def get_dist_type(self, distribution: str):
+        continuous = self.__input_config['distributions']['continuous']
+        discrete = self.__input_config['distributions']['discrete']
+        multivariate = self.__input_config['distributions']['multivariate']
+
+        if distribution in continuous['names']:
+            return 'continuous'
+        elif distribution in discrete['names']:
+            return 'discrete'
+        elif distribution in discrete['names']:
+            return 'multivariate'
 
     @staticmethod
     def ui_config(name):
