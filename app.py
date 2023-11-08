@@ -74,6 +74,32 @@ app_ui = x.ui.page_fillable(
                                ui.output_ui('dist2_inputs'),
                                ui.output_ui('dist2_details'),
                                ),
+                        ui.nav_menu(
+                            x.ui.tooltip("See More", "Redirects to Jupyter Notebook", id="distances_info"),
+                            ui.nav_control(
+                                ui.a(
+                                    "Hellinger",
+                                    href="#",
+                                    target="_blank",
+                                )
+                            ),
+                            ui.nav_control(
+                                ui.a(
+                                    "Bhattacharyya",
+                                    href="#",
+                                    target="_blank",
+                                )
+                            ),
+
+                            ui.nav_control(
+                                ui.a(
+                                    "Kullback–Leibler",
+                                    href="#",
+                                    target="_blank",
+                                )
+                            ),
+                            align="right",
+                        ),
                     ),
                     ui.hr(),
                     divergence_selection('divergence'),

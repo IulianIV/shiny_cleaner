@@ -14,7 +14,7 @@ def divergence_selection():
                       style="display: flex; align-items: center;")
         ),
         ui.hr(),
-        ui.input_switch('show_all', 'Show Elementwise calculations'),
+        ui.input_switch('show_all', 'Show elementwise calculations'),
         # related to the elementwise print of data
         ui.output_text_verbatim('details'),
 
