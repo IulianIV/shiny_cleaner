@@ -4,11 +4,11 @@ import numpy as np
 import pandas
 
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
-import shiny.experimental as x
 
 import scipy
 
 from config import Config
+from utils import compare_dist_types
 
 config = Config()
 graph_height = config.ui_config('graph_height')
@@ -28,7 +28,6 @@ def divergence_results(input: Inputs, output: Outputs, session: Session, diverge
         details_body = []
 
         if divergence_results.is_set():
-            # details_body = ''.join([f'{title}: {value}\n' for title, value in divergence_results().items()[-1]])
             for k, v in divergence_results().items():
 
                 if k == 'element_wise_data':
@@ -49,9 +48,18 @@ def compute_divergences(input: Inputs, output: Outputs, session: Session, distri
     @reactive.event(input.compute)
     def compute():
 
+        diverge_data = dict()
         current_distributions = tuple()
 
-        diverge_data = dict()
+        dist1_data = distributions[0]
+        dist2_data = distributions[1]
+
+        dist_values = (dist1_data()['distribution_array'][1], dist2_data()['distribution_array'][1])
+
+        if len(dist_values[0]) != len(dist_values[1]):
+            diverge_data['Array length error'] = 'Selected distributions must have same length'
+            diverge_results.set(diverge_data)
+            return None
 
         for value in input.__dict__.values():
             if isinstance(value, dict):
@@ -61,10 +69,44 @@ def compute_divergences(input: Inputs, output: Outputs, session: Session, distri
                 if 'dist2-distributions' in value.keys():
                     current_distributions = current_distributions + (value['dist2-distributions'](),)
 
-        dist1_data = distributions[0]
-        dist2_data = distributions[1]
+        if input.divergences() == 'Discrete Bhattacharyya':
 
-        dist_values = (dist1_data()['distribution_array'][1], dist2_data()['distribution_array'][1])
+            if not compare_dist_types(current_distributions[0], current_distributions[1], 'discrete'):
+                diverge_data['Distribution type error'] = ('Discrete Bhattacharyya can not be '
+                                                           'calculated for continuous distributions.')
+                diverge_results.set(diverge_data)
+                return None
+
+            square_roots = []
+            for pi, qi in zip(dist_values[0], dist_values[1]):
+                square_roots.append(np.sqrt(pi * qi))
+
+            bhat = np.round(-np.log(sum(square_roots)), 5)
+
+            diverge_data[f'{input.divergences()} divergence'] = bhat
+
+            diverge_results.set(diverge_data)
+
+        if input.divergences() == 'Discrete Hellinger':
+
+            if not compare_dist_types(current_distributions[0], current_distributions[1], 'discrete'):
+                diverge_data['Distribution type error'] = ('Discrete Hellinger can not be '
+                                                           'calculated for continuous distributions.')
+                diverge_results.set(diverge_data)
+                return None
+
+            squares = []
+
+            for pi, qi in zip(dist_values[0], dist_values[1]):
+                squares.append((np.sqrt(pi) - np.sqrt(qi)) ** 2)
+
+            sq_sum = np.sum(squares)
+
+            hellinger = np.round(sq_sum / np.sqrt(2), 5)
+
+            diverge_data[f'{input.divergences()} divergence'] = hellinger
+
+            diverge_results.set(diverge_data)
 
         if input.divergences() == 'Kullback–Leibler':
 
@@ -106,6 +148,10 @@ def show_compute_extra(input: Inputs, output: Outputs, session: Session, diverge
     @reactive.Effect
     @reactive.event(input.show_all)
     def extra():
+
+        if input.divergences() == 'Discrete Hellinger':
+            return None
+
         data_frame = diverge_results()['element_wise_data']
         details_body = ['| Dist. 1 | Dist. 2 | SciPy KL | Formula KL |\n',
                         '|:--:|:--:|:--:|:--:|\n']
@@ -122,5 +168,6 @@ def show_compute_extra(input: Inputs, output: Outputs, session: Session, diverge
                      easy_close=True,
                      footer=None,
                      )
+
         ui.modal_show(m)
         pass

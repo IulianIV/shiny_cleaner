@@ -61,7 +61,7 @@ class Config:
             'ub': 100
         },
         'divergence': {
-            'names': ['Hellinger', 'Kullback–Leibler', 'Bregman']
+            'names': ['Discrete Hellinger', 'Kullback–Leibler', 'Discrete Bhattacharyya']  # 'Bregman'
         }
     }
 
