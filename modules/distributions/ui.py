@@ -1,4 +1,3 @@
-
 from config import Config
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
 from modules.common_ui import label_with_tooltip

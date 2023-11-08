@@ -1,5 +1,5 @@
 from config import Config
-from shiny import Inputs, Outputs, Session, module, render, ui, reactive
+from shiny import module, ui
 
 config = Config()
 divergence_names = config.input_config('divergence')['names']
