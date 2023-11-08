@@ -8,6 +8,8 @@ import numpy as np
 import re
 import os
 
+from typing import Literal, Any
+
 from config import Config
 
 config = Config()
@@ -139,6 +141,24 @@ def create_distribution_df(dist_name: str, continuous_dist: bool, dist_size: int
                           zip(['mean', 'variance', 'skewness', 'kurtosis', 'entropy', 'loc', 'scale'], stats)}
 
     return dist_data
+
+
+def compare_dist_types(dist1_name, dist2_name,
+                       check_type: Literal['discrete', 'continuous', None] = None) -> tuple[Any, Any] | bool:
+    """
+    Check if the types of two distributions are the same. Otherwise, return their types
+    :param dist1_name: Name of first distribution
+    :param dist2_name: Name of second distribution
+    :param check_type: Type to check against
+    :return:
+    """
+    if check_type is None:
+        return config.get_dist_type(dist1_name), config.get_dist_type(dist2_name)
+
+    if config.get_dist_type(dist1_name) == config.get_dist_type(dist2_name) == check_type:
+        return True
+    else:
+        return False
 
 
 # This is a hacky workaround to help Plotly plots automatically
