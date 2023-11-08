@@ -1,9 +1,11 @@
 from __future__ import annotations
 
-import numpy
 import numpy as np
 import pandas
+
 from shiny import Inputs, Outputs, Session, module, render, ui, reactive
+import shiny.experimental as x
+
 import scipy
 
 from config import Config
@@ -24,26 +26,19 @@ def divergence_results(input: Inputs, output: Outputs, session: Session, diverge
         selected_divergence = input.divergences()
 
         details_body = []
-        # elementwise_df = None
 
-        # TODO implement the elementwise print of data
+        if divergence_results.is_set():
+            # details_body = ''.join([f'{title}: {value}\n' for title, value in divergence_results().items()[-1]])
+            for k, v in divergence_results().items():
 
-        # if divergence_results.is_set():
-        #     # details_body = ''.join([f'{title}: {value}\n' for title, value in divergence_results().items()[-1]])
-        #     for k, v in divergence_results().items():
-        #         details_body.append(f'{k}: {v}\n')
-        #
-        #         if k == 'element_wise_data':
-        #             elementwise_df = v
-        #             # details_body.append('Dist. 1 Data\tDist. 2 Data\tSciPy KL\tFormula KL\n')
-        #             # for x in range(len(v['d1_data'])):
-        #             #     details_body.append(
-        #             #         f'{v["d1_data"][x]}\t{v["d2_data"][x]}\t{v["kl"][x]}\t{v["custom_kl"][x]}\n')
+                if k == 'element_wise_data':
+                    continue
+
+                details_body.append(f'{k}: {v}\n')
 
         return (
             f'\t~~~{selected_divergence} Divergence results~~~\n'
             f'{"".join(details_body)}\n'
-            # f'{elementwise_df}'
         )
 
 
@@ -86,24 +81,46 @@ def compute_divergences(input: Inputs, output: Outputs, session: Session, distri
                 else:
                     kl_by_formula.append(0)
 
-            kl_by_formula = numpy.array(kl_by_formula)
+            kl_by_formula = np.array(kl_by_formula)
 
-            diverge_data['SciPy Kullback–Leibler avg.'] = np.average(kl)
-            diverge_data['Formula Based Kulback-Leibler avg.'] = np.average(kl_by_formula)
+            diverge_data['SciPy Kullback–Leibler avg.'] = np.round(np.average(kl), 5)
+            diverge_data['Formula Based Kullback-Leibler avg.'] = np.round(np.average(kl_by_formula), 5)
 
             # related to the print of elementwise data
-            if input.show_all():
-                elementwise_dict = {
-                    'd1_data': dist_values[0],
-                    'd2_data': dist_values[1],
-                    'kl': kl,
-                    'custom_kl': kl_by_formula
-                }
+            elementwise_dict = {
+                'd1_data': dist_values[0],
+                'd2_data': dist_values[1],
+                'kl': kl,
+                'custom_kl': kl_by_formula
+            }
 
-                diverge_data['element_wise_data'] = pandas.DataFrame(elementwise_dict)
-
-                print(diverge_data['element_wise_data'])
+            diverge_data['element_wise_data'] = pandas.DataFrame(elementwise_dict)
 
             diverge_results.set(diverge_data)
 
+        pass
+
+
+@module.server
+def show_compute_extra(input: Inputs, output: Outputs, session: Session, diverge_results: reactive.Value):
+    @reactive.Effect
+    @reactive.event(input.show_all)
+    def extra():
+        data_frame = diverge_results()['element_wise_data']
+        details_body = ['| Dist. 1 | Dist. 2 | SciPy KL | Formula KL |\n',
+                        '|:--:|:--:|:--:|:--:|\n']
+
+        for x in range(len(data_frame['d1_data'])):
+            details_body.append(
+                f'| {np.round(data_frame["d1_data"][x], 3)} | {np.round(data_frame["d2_data"][x], 3)} | {np.round(data_frame["kl"][x], 3)} | {np.round(data_frame["custom_kl"][x], 3)} |\n')
+
+        details_body = ''.join(details_body)
+
+        m = ui.modal(ui.markdown(details_body)
+                     ,
+                     title="Elementwise divergence table",
+                     easy_close=True,
+                     footer=None,
+                     )
+        ui.modal_show(m)
         pass

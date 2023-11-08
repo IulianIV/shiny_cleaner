@@ -16,7 +16,6 @@ def divergence_selection():
         ui.hr(),
         ui.input_switch('show_all', 'Show Elementwise calculations'),
         # related to the elementwise print of data
-        # ui.panel_conditional('input.show_all', ui.p('stuff')),
-        # ui.output_text_verbatim('details'),
+        ui.output_text_verbatim('details'),
 
     )

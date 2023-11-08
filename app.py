@@ -16,7 +16,7 @@ from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           create_dist_details, dist_graph)  # dist_eq
 
 from modules.divergence.ui import divergence_selection
-from modules.divergence.server import divergence_results, compute_divergences
+from modules.divergence.server import divergence_results, compute_divergences, show_compute_extra
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -206,6 +206,8 @@ def server(input: Inputs, output: Outputs, session: Session):
         divergence_results('divergence', divergence_values)
 
     compute_divergences('divergence', (dist1_data, dist2_data), divergence_values)
+
+    show_compute_extra('divergence', divergence_values)
 
     # Summary Section ####
 
