@@ -15,8 +15,13 @@ from modules.distributions.server import (update_dist_prob, update_plot_prop,
                                           update_dist_max, create_dist_df, update_dist_prop_select,
                                           create_dist_details, dist_graph)  # dist_eq
 
-from modules.divergence.ui import divergence_selection
+from modules.divergence.ui import divergence_selection, divergence_doc_urls
 from modules.divergence.server import divergence_results, compute_divergences, show_compute_extra
+
+from starlette.applications import Starlette
+from starlette.routing import Mount
+
+from utils import gen_starlette_mounts
 
 # TODO Check import management
 #   if there are some imports, such as numpy, that are used only in certain functions, import the library inside that
@@ -27,6 +32,8 @@ app_height = Config.ui_config('height')
 dist_id = 'distributions'
 summary_id = 'summary'
 statistics_id = 'statistics'
+
+divergence_names = Config.input_config('divergence')['names']
 
 # column choices
 app_ui = x.ui.page_fillable(
@@ -74,32 +81,7 @@ app_ui = x.ui.page_fillable(
                                ui.output_ui('dist2_inputs'),
                                ui.output_ui('dist2_details'),
                                ),
-                        ui.nav_menu(
-                            x.ui.tooltip("See More", "Redirects to Jupyter Notebook", id="distances_info"),
-                            ui.nav_control(
-                                ui.a(
-                                    "Hellinger",
-                                    href="#",
-                                    target="_blank",
-                                )
-                            ),
-                            ui.nav_control(
-                                ui.a(
-                                    "Bhattacharyya",
-                                    href="#",
-                                    target="_blank",
-                                )
-                            ),
-
-                            ui.nav_control(
-                                ui.a(
-                                    "Kullback–Leibler",
-                                    href="#",
-                                    target="_blank",
-                                )
-                            ),
-                            align="right",
-                        ),
+                        divergence_doc_urls('divergence'),
                     ),
                     ui.hr(),
                     divergence_selection('divergence'),
@@ -250,4 +232,11 @@ def server(input: Inputs, output: Outputs, session: Session):
     create_graph(summary_id, filter_df(summary_id, orig_summary_df, summary_df))
 
 
-app = App(app_ui, server, debug=False)
+stats_app = App(app_ui, server, debug=False)
+
+app_routes = [
+    *gen_starlette_mounts('divergence'),
+    Mount('/stats', app=stats_app)
+]
+
+app = Starlette(routes=app_routes)
