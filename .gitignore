@@ -162,3 +162,5 @@ bin/
 pyvenv.cfg
 share/
 etc/
+*.ipynb
+
