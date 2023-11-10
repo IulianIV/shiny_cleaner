@@ -149,7 +149,7 @@ def show_compute_extra(input: Inputs, output: Outputs, session: Session, diverge
     @reactive.event(input.show_all)
     def extra():
 
-        if input.divergences() == 'Discrete Hellinger':
+        if input.divergences() in ['Discrete Hellinger', 'Discrete Bhattacharyya']:
             return None
 
         data_frame = diverge_results()['element_wise_data']
