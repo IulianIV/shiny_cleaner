@@ -1,6 +1,11 @@
+from pathlib import Path
+from os import scandir
 import numpy
 import pandas
+
 from shiny import reactive, session
+from starlette.routing import Mount
+from starlette.staticfiles import StaticFiles
 
 import scipy
 import pandas as pd
@@ -17,6 +22,7 @@ dist_defaults = config.input_config('distributions')
 
 cont_dist = dist_defaults['continuous']
 discrete_dist = dist_defaults['discrete']
+divergence_doc_names = config.input_config('divergence')['doc_names']
 
 
 # TODO try to implement the distributions as generators
@@ -159,6 +165,19 @@ def compare_dist_types(dist1_name, dist2_name,
         return True
     else:
         return False
+
+
+def gen_starlette_mounts(module):
+    mounts = tuple()
+
+    root_path = Path(__file__).parent.joinpath(f'modules/{module}')
+    module_subfolders = [f.path for f in scandir(root_path) if f.is_dir() and not f.path.endswith('__pycache__')]
+    url_paths = [sub_path.split('/')[-1] for sub_path in module_subfolders]
+
+    for sub_folder, url_path in zip(module_subfolders, url_paths):
+        mounts = mounts + (Mount(f'/docs/{url_path}', app=StaticFiles(directory=sub_folder, html=True)),)
+
+    return mounts
 
 
 # This is a hacky workaround to help Plotly plots automatically
